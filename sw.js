@@ -1,66 +1,51 @@
-const CACHE_NAME = 'smart-pay-v9.1';
-
-const PRECACHE_ASSETS = [
+const CACHE_NAME = 'smart-pay-v9.6.1';
+const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  'https://cdn.tailwindcss.com'
+  './icon-192.png'
 ];
 
-self.addEventListener('install', (e) => {
+// 1. 설치 즉시 대기 상태 없이 새 서비스 워커 활성화
+self.addEventListener('install', event => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      Promise.allSettled(
-        PRECACHE_ASSETS.map((url) =>
-          fetch(url, url.startsWith('http') ? { mode: 'no-cors' } : { cache: 'no-store' })
-            .then((res) => {
-              if (res && (res.ok || res.type === 'opaque')) {
-                return cache.put(url, res);
-              }
-            })
-        )
-      )
-    )
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {})
   );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+// 2. 활성화 즉시 이전 버전 캐시 전부 삭제 및 제어권 확보
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      )
     ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+// 3. 네트워크 우선(Network-First) 전략: 인터넷 연결 시 무조건 최신 파일 로드 후 캐시 갱신, 오프라인 시 캐시 반환
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
 
-  const url = new URL(e.request.url);
+  const url = new URL(event.request.url);
+  // GitHub Gist API 등 외부 API 요청은 캐시하지 않고 바로 통과
+  if (url.origin !== self.location.origin) return;
 
-  // 깃허브 Gist 클라우드 백업/복원 API 요청은 캐싱 제외
-  if (url.hostname.includes('api.github.com')) return;
-
-  const isSameOrigin = url.origin === self.location.origin;
-
-  e.respondWith(
-    fetch(e.request, isSameOrigin ? { cache: 'no-store' } : undefined)
-      .then((res) => {
-        if (res && (res.ok || res.type === 'opaque')) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+  event.respondWith(
+    fetch(event.request, { cache: 'no-store' })
+      .then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
         }
-        return res;
+        return networkResponse;
       })
-      .catch(() =>
-        caches.match(e.request).then((cached) => {
-          if (cached) return cached;
-          if (e.request.mode === 'navigate') {
-            return caches.match('./index.html') || caches.match('./');
-          }
-        })
-      )
+      .catch(() => caches.match(event.request))
   );
 });
