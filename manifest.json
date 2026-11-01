@@ -1,14 +1,13 @@
 {
-  "id": "/",
-  "lang": "ko",
-  "name": "스마트 월급계산기",
+  "name": "스마트 월급·퇴직금 계산기",
   "short_name": "월급계산기",
-  "description": "스마트 월급 및 퇴직금 계산기",
+  "description": "교대근무 달력, 급여·상여·퇴직금 및 연차 통합 계산기",
+  "lang": "ko-KR",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
+  "background_color": "#ffffff",
   "theme_color": "#0f172a",
   "icons": [
     {
