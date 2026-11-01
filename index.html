@@ -1653,8 +1653,10 @@
         const priorV = Math.max(0, Number($('input_prior_used_vac')?.value) || 0);
         if (!this.vacationByYear) this.vacationByYear = {};
         this.vacationByYear[yKey] = { total: totalV, prior: priorV };
-        this.totalVacation = totalV;
-        this.priorUsedVacation = priorV;
+        if (Number(targetY) === 2026) {
+          this.totalVacation = totalV;
+          this.priorUsedVacation = priorV;
+        }
 
         if ($('input_hire_date')) this.hireDate = $('input_hire_date').value || '2020-01-01';
         this.save(); this.render();
@@ -2510,9 +2512,12 @@
           if (rdIn) rdIn.value = calc.ex.retroDed !== undefined ? calc.ex.retroDed : '';
         } else {
           const wIn = $('input_exact_wage'), bIn = $('input_exact_bonus'), nIn = $('input_exact_net');
+          const mBaseIn = $('input_month_base_pay'), mInsIn = $('input_month_fixed_ins');
           if (wIn) wIn.placeholder = `예상 ${calc.autoWage.toLocaleString()}`;
           if (bIn) bIn.placeholder = bonusPlaceholder;
           if (nIn) nIn.placeholder = `예상 ${calc.autoNet.toLocaleString()}`;
+          if (mBaseIn) mBaseIn.placeholder = calc.appliedBase > 0 ? `적용중 ${calc.appliedBase.toLocaleString()}` : '기본급 입력(이후 자동이월)';
+          if (mInsIn) mInsIn.placeholder = calc.fixedInsurances > 0 ? `적용중 ${calc.fixedInsurances.toLocaleString()}` : '4대보험 입력(이후 자동이월)';
         }
 
         const diffNotice = $('slip_diff_notice');
