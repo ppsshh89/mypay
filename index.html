@@ -902,7 +902,6 @@
       applyStampOnCell(ev) {
         const preset = STAMP_PRESETS.find(s => s.id === this.activeStampId) || STAMP_PRESETS[0];
         const k = ev.key, curRec = this.records[k] || {};
-        // 수동으로 고정한 근무조가 있는 경우 customShift 플래그까지 함께 보존
         const keptShift = (curRec.customShift && curRec.shift && curRec.shift !== ev.defaultShift) ? curRec.shift : undefined;
         const clearOrRestoreShift = () => {
           this.setWorkRecord(k, keptShift ? { type: 'NORMAL', hours: 0, shift: keptShift, customShift: true } : null);
@@ -1428,7 +1427,6 @@
         this.syncViewButtonsUI();
         this.render(false);
       },
-
       getActivePayYM() {
         if (this.calendarView === 'MEMO') {
           let y = this.memoYear, m = this.memoMonth + this.memoPayOffset;
@@ -1655,6 +1653,8 @@
         const priorV = Math.max(0, Number($('input_prior_used_vac')?.value) || 0);
         if (!this.vacationByYear) this.vacationByYear = {};
         this.vacationByYear[yKey] = { total: totalV, prior: priorV };
+        this.totalVacation = totalV;
+        this.priorUsedVacation = priorV;
 
         if ($('input_hire_date')) this.hireDate = $('input_hire_date').value || '2020-01-01';
         this.save(); this.render();
@@ -1709,7 +1709,6 @@
 
         const expectedRegBonus = (payM % 2 === 0) ? appliedBase : 0;
 
-        // 당월에 명절이 있더라도 실제 입력한 ②상여가 정기상여 수준 이하라면 명절상여 미지급으로 일원화 판정
         if (fest && ex.exactBonus !== undefined && ex.exactBonus >= 0) {
           if (appliedBase > 0 ? (ex.exactBonus < expectedRegBonus + (appliedBase * 0.5)) : (ex.exactBonus === 0)) {
             return { hasHol: false, name: null };
@@ -1722,7 +1721,6 @@
           }
         }
 
-        // 전달에 이미 명절상여를 앞당겨 받은 경우 당월 자동상여 중복 방지
         if (fest && !prevFest) {
           const prevBase = this.resolveEffectiveBaseInfo(prevY, prevM).val;
           const prevRegBonus = (prevM % 2 === 0) ? prevBase : 0;
@@ -1733,7 +1731,6 @@
           }
         }
 
-        // 다음 달에 명절상여를 받은 경우(월말 명절 익월 지급) 당월 자동상여 중복 방지
         if (fest && !nextFest) {
           const nextBase = this.resolveEffectiveBaseInfo(nextY, nextM).val;
           const nextRegBonus = (nextM % 2 === 0) ? nextBase : 0;
@@ -1912,7 +1909,7 @@
           sumOtH += ev.otHours; sumHolBaseH += ev.holBaseHours; sumHolOverH += ev.holOverHours; sumNightH += ev.nightHours;
           if (ev.type === 'HOLIDAY') holCount++;
           else if (!ev.isRedOffDay && ev.type === 'LEAVE') { monthVacDays += ev.vacDays; if (ev.vacDays < 1) normalWorkDays += (1 - ev.vacDays); }
-          else if (!ev.isRedOffDay && (ev.type === 'NORMAL' || ev.type === 'OT' || ev.type === 'NIGHT_OT' || ev.type === 'REQ_EDU')) normalWorkDays += 1;
+          else if (!ev.isRedOffDay && (ev.type === 'NORMAL' || ev.type === 'OT' || ev.type === 'NIGHT_OT' || ev.type === 'REQ_EDU' || ev.type === 'GONGGA')) normalWorkDays += 1;
           return ev;
         });
 
@@ -1970,7 +1967,6 @@
           baseDed = ex.exactDed;
           baseNet = baseGross - baseDed;
         } else if (hasExactWage || hasExactBonus) {
-          // 명절상여는 익월(prevHadHolBonus)에 정산되므로 당월 세금 추정 시 명절상여분 중복 과세 제외
           const taxableRegBonus = Math.max(0, finalBonus - (autoHolName ? appliedBase : 0));
           const estTaxForFinal = this.estimateMonthlyIncomeTax(finalWage, taxableRegBonus, prevHadHolBonus, appliedBase);
           baseDed = estTaxForFinal + fixedInsurances + unionFee;
@@ -2658,7 +2654,6 @@
         const vacCfg = this.getYearVacationConfig(y);
         const calUsed = this.getCalendarUsedVacationDays(y), totalUsed = Math.max(0, vacCfg.prior + calUsed), rem = Math.max(0, vacCfg.total - totalUsed);
         const latestDecBase = this.resolveEffectiveBaseInfo(y, 12).val || this.basePay;
-        // 상단 헤더 및 설정 탭과 동일하게 1일 연차수당 단가를 먼저 반올림 후 계산하여 오차 제거
         const oneDayVacPay = Math.round(8 * this.getHourlyRate(latestDecBase));
         const unusedPay = Math.round(rem * oneDayVacPay);
         let tg = 0, tn = 0, tw = 0, tb = 0, td = 0, to = 0, thc = 0, thh = 0, tni = 0;
