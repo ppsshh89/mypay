@@ -2532,15 +2532,21 @@
             diffNotice.innerHTML = `🔒 <strong>개인정보 보호 모드:</strong> 위 <strong>1. 당월 기본급</strong>에 기본급을 한 번만 입력하면 이후 달과 과거 달에 모두 자동 반영됩니다.`;
           } else if (calc.isVerifiedSlip) {
             const wDiff = calc.finalWage - calc.autoWage;
+            const gDiff = calc.baseGross - calc.autoGross;
             const nDiff = calc.baseNet - calc.autoNet;
             const wAccHtml = calc.hasExactWage
-              ? `근태 급여 적중률 <strong>${(calc.finalWage > 0 ? Math.max(0, 100 - (Math.abs(wDiff) / calc.finalWage * 100)) : 100).toFixed(1)}%</strong>`
+              ? `적중률 <strong>${(calc.finalWage > 0 ? Math.max(0, 100 - (Math.abs(wDiff) / calc.finalWage * 100)) : 100).toFixed(1)}%</strong>`
               : `1.급여 예상치 적용중`;
             const retroLine = calc.hasRetro
               ? `<div class="text-[9.5px] text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded mt-1 font-extrabold">💰 소급분 포함 최종 실수령액: <strong>${calc.finalNet.toLocaleString()}원</strong> (현황표 ${calc.baseNet.toLocaleString()}원 + 소급실수령 ${calc.retroNet >= 0 ? '+' : ''}${calc.retroNet.toLocaleString()}원)</div>`
               : '';
             diffNotice.innerHTML = `<div class="flex items-center justify-between text-blue-800"><span>✔ <strong>현황표 반영됨</strong> (${wAccHtml})</span><span>퇴직금산입: <strong>${calc.coreMonthlyWage.toLocaleString()}원</strong></span></div>
-            <div class="text-[9.5px] text-slate-600 mt-0.5">• 달력 예상 대비: 급여 <strong class="${wDiff >= 0 ? 'text-emerald-700' : 'text-rose-600'}">${wDiff >= 0 ? '+' : ''}${wDiff.toLocaleString()}원</strong> / 현황표세후 <strong class="${nDiff >= 0 ? 'text-emerald-700' : 'text-rose-600'}">${nDiff >= 0 ? '+' : ''}${nDiff.toLocaleString()}원</strong></div>${retroLine}`;
+            <div class="text-[9.5px] text-slate-600 mt-0.5 space-y-0.5">
+              <div>• 달력 예상: 세전 <strong class="text-slate-800">${calc.autoGross.toLocaleString()}원</strong> / 세후 <strong class="text-slate-800">${calc.autoNet.toLocaleString()}원</strong></div>
+              <div>• 실제 수령: 세전 <strong class="text-blue-800">${calc.baseGross.toLocaleString()}원</strong> / 세후 <strong class="text-emerald-800">${calc.baseNet.toLocaleString()}원</strong></div>
+              <div>• 예상 대비: 세전 <strong class="${gDiff >= 0 ? 'text-emerald-700' : 'text-rose-600'}">${gDiff >= 0 ? '+' : ''}${gDiff.toLocaleString()}원 차이</strong> / 세후 <strong class="${nDiff >= 0 ? 'text-emerald-700' : 'text-rose-600'}">${nDiff >= 0 ? '+' : ''}${nDiff.toLocaleString()}원 차이</strong></div>
+              <div class="text-[9px] text-slate-500 pt-0.5">💡 예상과의 차이는 교육수당, 푸드코트, 경조금, 연말정산 등으로 발생합니다.</div>
+            </div>${retroLine}`;
           } else {
             diffNotice.innerHTML = `💡 평소엔 급상여 지급 현황의 <strong>1.급여 · 2.상여 · 3.세후</strong>만 입력하면 확정되며, 소급분이 있는 달에만 급여정보의 <strong>2.소급분 반영</strong> 칸에 적어주시면 실제 받은 월급과 연간리포트에 자동 합산됩니다.`;
           }
