@@ -538,7 +538,7 @@
           </div>
           <div id="restore_code_box" class="hidden pt-2 space-y-2">
             <textarea id="textarea_restore_code" rows="3" placeholder="백업코드를 여기에 붙여넣으세요..." class="w-full p-2.5 border border-blue-300 rounded-xl text-[11px] font-mono bg-slate-50"></textarea>
-            <button onclick="App.restoreFromCode()" class="w-full py-2.5 bg-emerald-600 text-white font-black rounded-xl text-xs nowrap">✔️ 이 백업코드로 데이터 즉시 복원하기 (메모 유지)</button>
+            <button onclick="App.restoreFromCode()" class="w-full py-2.5 bg-emerald-600 text-white font-black rounded-xl text-xs nowrap">✔️ 이 백업코드로 데이터 즉시 복원하기</button>
           </div>
         </div>
       </div>
@@ -1248,7 +1248,7 @@
           const r = await fetch(`https://api.github.com/gists/${gid}?_t=${Date.now()}`, { headers: this.getGithubHeaders(t), cache: 'no-store' });
           const d = await r.json();
           const raw = (d.files?.[this.GIST_FILENAME] || d.files?.[this.LEGACY_GIST_FILENAME])?.content;
-          this.loadStateObject(JSON.parse(raw), true);
+          this.loadStateObject(JSON.parse(raw), false);
           this.ghToken = t; this.ghGistId = gid;
           if (this.priorUsedVacation < 0) this.priorUsedVacation = 0;
           this.save(true); this.syncSettingsInputs(); this.render();
@@ -1293,9 +1293,10 @@
 
       fmtVacNum(d) { return Number(Number(d || 0).toFixed(3)); },
       fmtHoursLabel(h) {
-        if (Math.abs(h - 9.6667) < 0.05) return '9h40m';
-        if (Math.abs(h - 1.6667) < 0.05) return '1h40m';
-        return Number.isInteger(h) ? `${h}h` : `${Number(h.toFixed(2))}h`;
+        const totalMin = Math.round((Number(h) || 0) * 60);
+        const hrs = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+        return mins === 0 ? `${hrs}h` : `${hrs}h${mins}m`;
       },
 
       getYearVacationConfig(targetYear = this.getActiveVacationYear()) {
@@ -1524,11 +1525,11 @@
         const raw = $('textarea_restore_code').value.trim();
         if (!raw) return;
         try {
-          this.loadStateObject(JSON.parse(raw), true);
+          this.loadStateObject(JSON.parse(raw), false);
           this.save();
           this.syncSettingsInputs();
           this.render();
-          alert('✔ 백업코드 복원이 완료되었습니다! (기존 메모 유지)');
+          alert('✔ 백업코드 복원이 완료되었습니다!');
           this.switchTab('home');
         } catch (e) { alert('코드 형식 오류입니다.'); }
       },
@@ -1761,30 +1762,12 @@
           }
         }
 
-        if (!fest && nextFest && ex.exactBonus !== undefined && appliedBase > 0) {
-          if (ex.exactBonus >= expectedRegBonus + (appliedBase * 0.8)) {
-            return { hasHol: true, name: nextFest.name };
-          }
+        if (fest && !prevFest && prevEx.manualHolBonus === true) {
+          return { hasHol: false, name: null };
         }
 
-        if (fest && !prevFest) {
-          const prevBase = this.resolveEffectiveBaseInfo(prevY, prevM).val;
-          const prevRegBonus = (prevM % 2 === 0) ? prevBase : 0;
-          const prevClaimedManually = (prevEx.manualHolBonus === true);
-          const prevClaimedByBonusInput = (prevEx.exactBonus !== undefined && prevBase > 0 && prevEx.exactBonus >= prevRegBonus + (prevBase * 0.8));
-          if (prevClaimedManually || prevClaimedByBonusInput) {
-            return { hasHol: false, name: null };
-          }
-        }
-
-        if (fest && !nextFest) {
-          const nextBase = this.resolveEffectiveBaseInfo(nextY, nextM).val;
-          const nextRegBonus = (nextM % 2 === 0) ? nextBase : 0;
-          const nextClaimedManually = (nextEx.manualHolBonus === true);
-          const nextClaimedByBonusInput = (nextEx.exactBonus !== undefined && nextBase > 0 && nextEx.exactBonus >= nextRegBonus + (nextBase * 0.8));
-          if (nextClaimedManually || nextClaimedByBonusInput) {
-            return { hasHol: false, name: null };
-          }
+        if (fest && !nextFest && nextEx.manualHolBonus === true) {
+          return { hasHol: false, name: null };
         }
 
         return { hasHol: Boolean(fest), name: fest ? fest.name : null };
@@ -1825,10 +1808,10 @@
           ex.exactIns = Number(insRaw);
         }
 
-        if (rgRaw === '' || Number(rgRaw) <= 0) delete ex.retroGross;
+        if (rgRaw === '' || Number(rgRaw) === 0) delete ex.retroGross;
         else ex.retroGross = Number(rgRaw);
 
-        if (rdRaw === '' || Number(rdRaw) <= 0) delete ex.retroDed;
+        if (rdRaw === '' || Number(rdRaw) === 0) delete ex.retroDed;
         else ex.retroDed = Number(rdRaw);
 
         this.cleanupMonthExtra(pm.y, pm.m);
@@ -2002,14 +1985,9 @@
         const hasExactGross = ex.exactGross !== undefined && ex.exactGross > 0;
 
         const finalWage = hasExactWage ? ex.exactWage : autoWage;
-        const minValidNetForZeroBonus = Math.max(100000, Math.round(finalWage * 0.5));
-        const maxNetForZeroBonus = Math.min(finalWage, Math.round(finalWage - fixedInsurances - unionFee + (appliedBase * 0.25)));
-        const impliedZeroBonus = !hasExactBonus && autoBonus > 0 && hasExactWage && hasExactNet &&
-          (ex.exactNet >= minValidNetForZeroBonus) && (ex.exactNet <= maxNetForZeroBonus);
-
-        const finalBonus = hasExactBonus ? ex.exactBonus : (impliedZeroBonus ? 0 : autoBonus);
-        const autoHolName = (impliedZeroBonus || (hasExactBonus && ex.exactBonus === 0 && ex.manualHolBonus !== true)) ? null : rawAutoHolName;
-        const baseGross = (hasExactWage || hasExactBonus || impliedZeroBonus) ? (finalWage + finalBonus) : (hasExactGross ? ex.exactGross : autoGross);
+        const finalBonus = hasExactBonus ? ex.exactBonus : autoBonus;
+        const autoHolName = (hasExactBonus && ex.exactBonus === 0 && ex.manualHolBonus !== true) ? null : rawAutoHolName;
+        const baseGross = (hasExactWage || hasExactBonus) ? (finalWage + finalBonus) : (hasExactGross ? ex.exactGross : autoGross);
 
         let baseNet = autoNet;
         let baseDed = autoDed;
@@ -2030,7 +2008,7 @@
         const retroGross = Number(ex.retroGross) || 0;
         const retroDed = Number(ex.retroDed) || 0;
         const retroNet = retroGross - retroDed;
-        const hasRetro = retroGross > 0 || retroDed > 0;
+        const hasRetro = retroGross !== 0 || retroDed !== 0;
 
         const finalGross = baseGross + retroGross;
         const finalDed = baseDed + retroDed;
@@ -2045,7 +2023,7 @@
 
         return (this.summaryCache[cacheKey] = {
           payY, payM, appliedBase, baseInfo, insInfo, rate, cutoffDates, evaluated, autoHolName, isEven, ex,
-          isVerifiedSlip, hasExactWage, hasExactBonus, hasExactNet, impliedZeroBonus, prevHadHolBonus,
+          isVerifiedSlip, hasExactWage, hasExactBonus, hasExactNet, prevHadHolBonus,
           sumOtH, sumHolBaseH, sumHolOverH, sumNightH, holCount, monthVacDays, paidDays, workDays,
           sumPayDed, payMemoItems,
           timeGongsu, moneyGongsu, weeklyAvgHours, coreMonthlyWage, lmsPay,
@@ -2324,7 +2302,6 @@
           return;
         }
         this.invalidateSummaryCache();
-        this.syncModalMemoToRecord(this.selectedDateKey);
         const synced = this.records[this.selectedDateKey] || {};
         if (tt === 'OFF') tt = 'NORMAL';
         const defSh = this.selectedDayInfo?.defaultShift;
@@ -2582,7 +2559,7 @@
           }
         }
 
-        const bonusPlaceholder = calc.impliedZeroBonus ? '0 (상여없음 자동반영)' : `예상 ${calc.autoBonus.toLocaleString()}`;
+        const bonusPlaceholder = `예상 ${calc.autoBonus.toLocaleString()}`;
         if (!skipInput) {
           const wIn = $('input_exact_wage'), bIn = $('input_exact_bonus'), nIn = $('input_exact_net');
           const mBaseIn = $('input_month_base_pay'), mInsIn = $('input_month_fixed_ins');
@@ -2689,8 +2666,8 @@
           <div class="font-bold text-indigo-300 pt-1 border-t border-slate-700 flex justify-between"><span>[② 상여 내역 (정기·명절·성과)]</span><span>합계 ${calc.finalBonus.toLocaleString()}원</span></div>
           ${calc.hasRetro ? `
           <div class="font-bold text-amber-300 pt-1 border-t border-slate-700 flex justify-between"><span>[임금협상 소급분 정산]</span><span>실수령 ${calc.retroNet >= 0 ? '+' : ''}${calc.retroNet.toLocaleString()}원</span></div>
-          <div class="flex justify-between text-amber-200"><span>• 소급분(지급 · 퇴직금평균 제외)</span><strong>+${calc.retroGross.toLocaleString()}원</strong></div>
-          <div class="flex justify-between text-rose-300"><span>• 소급분(공제 · 소득세·조합비 등)</span><strong>-${calc.retroDed.toLocaleString()}원</strong></div>
+          <div class="flex justify-between text-amber-200"><span>• 소급분(지급 · 퇴직금평균 제외)</span><strong>${calc.retroGross >= 0 ? '+' : ''}${calc.retroGross.toLocaleString()}원</strong></div>
+          <div class="flex justify-between text-rose-300"><span>• 소급분(공제 · 소득세·조합비 등)</span><strong>${calc.retroDed >= 0 ? '-' : '+'}${Math.abs(calc.retroDed).toLocaleString()}원</strong></div>
           ` : ''}
           <div class="font-bold text-rose-300 pt-1 border-t border-slate-700 flex justify-between"><span>[③ 총 공제계 내역${calc.hasRetro ? ' (소급공제 포함)' : ''}]</span><span>${calc.finalDed >= 0 ? '-' : '+'}${Math.abs(calc.finalDed).toLocaleString()}원</span></div>
           <div class="flex justify-between text-slate-300"><span>• 4대보험(${calc.fixedInsurances.toLocaleString()}) + 노조비(${calc.unionFee.toLocaleString()})</span><strong>-${(calc.fixedInsurances + calc.unionFee).toLocaleString()}원</strong></div>
