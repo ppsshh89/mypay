@@ -87,11 +87,31 @@
       <!-- TAB 1: 달력 & 홈 -->
       <div id="tab_home" class="space-y-1.5 w-full" style="touch-action:pan-y;">
         <div id="calendar_swipe_zone" class="bg-white shadow-sm border-b border-slate-200 w-full overflow-hidden">
-          <!-- 상단 1번째 줄: 월 이동 헤더 -->
+          <!-- 상단 1번째 줄: 월 이동 헤더 (중앙 제목 터치 시 연도·월 선택창 열림) -->
           <div class="px-3 py-1.5 flex items-center justify-between gap-2 nowrap w-full box-border">
             <button type="button" id="btn_prev_month" class="w-8 h-7 bg-slate-100 active:bg-slate-200 rounded-lg font-black text-xs text-slate-700 flex items-center justify-center active:scale-95 transition">◀</button>
-            <h2 id="big_ym_title" class="text-[16px] font-black text-slate-900 tracking-tight text-center flex-1">일정 달력</h2>
+            <button type="button" id="btn_ym_picker_toggle" class="px-3 py-0.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200/80 flex items-center justify-center gap-1.5 mx-auto active:scale-95 transition">
+              <h2 id="big_ym_title" class="text-[16px] font-black text-slate-900 tracking-tight text-center">일정 달력</h2>
+              <span id="big_ym_arrow" class="text-[10px] font-black text-blue-600">▼</span>
+            </button>
             <button type="button" id="btn_next_month" class="w-8 h-7 bg-slate-100 active:bg-slate-200 rounded-lg font-black text-xs text-slate-700 flex items-center justify-center active:scale-95 transition">▶</button>
+          </div>
+
+          <!-- 연도·월 원터치 이동 선택창 (제목 터치 시 펼침) -->
+          <div id="ym_picker_bar" class="hidden bg-slate-100 border-t border-slate-200 px-2.5 py-2 space-y-2 shadow-inner">
+            <div class="flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="App.changeCalendarYear(-1)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[10.5px] font-black text-slate-700 active:scale-95 transition">◀ -1년</button>
+                <span id="ym_picker_year_label" class="text-xs font-black text-slate-900 px-1.5 tnum">2026년</span>
+                <button type="button" onclick="App.changeCalendarYear(1)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[10.5px] font-black text-slate-700 active:scale-95 transition">+1년 ▶</button>
+              </div>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="App.goToTodayFromPicker()" class="px-2 py-1 rounded-lg bg-blue-600 text-white text-[10px] font-black shadow-sm active:scale-95 transition">오늘로</button>
+                <button type="button" onclick="App.toggleYmPicker(false)" class="px-2 py-1 rounded-lg bg-white border border-rose-200 text-[10px] font-black text-rose-600 active:scale-95 transition">닫기 ✕</button>
+              </div>
+            </div>
+            <div id="ym_picker_year_chips" class="grid grid-cols-5 gap-1 text-[10px] font-black tnum"></div>
+            <div id="ym_picker_month_grid" class="grid grid-cols-6 gap-1 text-[10.5px] font-black tracking-tight tnum"></div>
           </div>
 
           <!-- 상단 2번째 줄: 오늘날짜/급여기간 + 도장입력 토글 바 -->
@@ -266,15 +286,6 @@
             </div>
             <div id="memo_hub_list" class="space-y-1.5 text-xs"></div>
             <button id="btn_memo_hub_more" onclick="App.toggleMemoHubExpand()" class="hidden w-full py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-black text-[10.5px] border border-amber-200 transition"></button>
-          </div>
-
-          <!-- 1~12월 원터치 조회 -->
-          <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 space-y-1.5">
-            <div class="flex items-center justify-between nowrap">
-              <span class="text-[11px] font-black text-slate-800">📅 1월~12월 일정 원터치 조회</span>
-              <span class="text-[9.5px] text-blue-600 font-bold">터치 시 해당 월 달력 이동</span>
-            </div>
-            <div id="quick_month_grid" class="grid grid-cols-6 gap-1 text-[10.5px] font-black tracking-tight"></div>
           </div>
         </div>
       </div>
@@ -803,6 +814,7 @@
 
       stampMode: false,
       activeStampId: 'OT4',
+      ymPickerOpen: false,
 
       memoHubExpanded: false,
       focusedDateKey: null,
@@ -886,7 +898,74 @@
         this.bindFastTap('btm_view_btn_PAY', () => this.onViewButtonTap('PAY'));
         this.bindFastTap('btn_prev_month', () => this.changeMonth(-1));
         this.bindFastTap('btn_next_month', () => this.changeMonth(1));
+        this.bindFastTap('btn_ym_picker_toggle', () => this.toggleYmPicker());
         this.bindFastTap('btn_stamp_toggle', () => this.toggleStampMode());
+      },
+
+      toggleYmPicker(forceState) {
+        this.flushPendingSave();
+        this.ymPickerOpen = forceState !== undefined ? forceState : !this.ymPickerOpen;
+        this.renderYmPicker();
+      },
+
+      changeCalendarYear(delta) {
+        const curY = (this.calendarView === 'PAY') ? this.payViewYear : this.memoYear;
+        this.selectCalendarYear(curY + delta);
+      },
+
+      selectCalendarYear(y) {
+        this.flushPendingSave();
+        this.memoYear = y;
+        this.payViewYear = y;
+        this.memoPayOffset = 0;
+        this.render(false);
+      },
+
+      goToTodayFromPicker() {
+        this.ymPickerOpen = false;
+        this.goToTodayMonth(true, true);
+      },
+
+      renderYmPicker() {
+        const bar = $('ym_picker_bar'), arrow = $('big_ym_arrow'), btn = $('btn_ym_picker_toggle');
+        if (!bar) return;
+        const ay = (this.calendarView === 'MEMO') ? this.memoYear : this.payViewYear;
+        const am = (this.calendarView === 'MEMO') ? this.memoMonth : this.payViewMonth;
+
+        if (!this.ymPickerOpen) {
+          bar.classList.add('hidden');
+          if (arrow) arrow.innerText = '▼';
+          if (btn) btn.className = 'px-3 py-0.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200/80 flex items-center justify-center gap-1.5 mx-auto active:scale-95 transition';
+          return;
+        }
+
+        bar.classList.remove('hidden');
+        if (arrow) arrow.innerText = '▲';
+        if (btn) btn.className = 'px-3 py-0.5 rounded-xl bg-blue-50 border border-blue-300 flex items-center justify-center gap-1.5 mx-auto active:scale-95 transition';
+        setText('ym_picker_year_label', `${ay}년`);
+
+        const yChipsEl = $('ym_picker_year_chips');
+        if (yChipsEl) {
+          const years = [ay - 2, ay - 1, ay, ay + 1, ay + 2];
+          yChipsEl.innerHTML = years.map(y => {
+            const cls = (y === ay)
+              ? 'py-1 rounded-lg bg-slate-900 text-amber-300 font-black shadow-sm active:scale-95 transition'
+              : 'py-1 rounded-lg bg-white border border-slate-300 text-slate-700 font-bold active:scale-95 transition';
+            return `<button type="button" onclick="App.selectCalendarYear(${y})" class="${cls}">${y}년</button>`;
+          }).join('');
+        }
+
+        const mGridEl = $('ym_picker_month_grid');
+        if (mGridEl) {
+          let h = '';
+          for (let m = 1; m <= 12; m++) {
+            const cls = (m === am)
+              ? 'py-1.5 rounded-lg bg-blue-600 text-white font-black shadow-sm active:scale-95 transition'
+              : 'py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-300 text-slate-800 font-black active:scale-95 transition';
+            h += `<button type="button" onclick="App.jumpToCalendarMonth(${m})" class="${cls}">${m}월</button>`;
+          }
+          mGridEl.innerHTML = h;
+        }
       },
 
       onViewButtonTap(v) {
@@ -1103,6 +1182,7 @@
         this.memoMonth = m;
         this.memoPayOffset = 0;
         this.calendarView = 'MEMO';
+        this.ymPickerOpen = false;
         this.syncViewButtonsUI();
         const k = this.formatKey(y, m, d);
         this.focusedDateKey = k;
@@ -1268,6 +1348,7 @@
         const ty = this.calendarView === 'PAY' ? this.payViewYear : this.memoYear;
         this.memoYear = ty; this.memoMonth = m; this.memoPayOffset = 0;
         this.payViewYear = ty; this.payViewMonth = m;
+        this.ymPickerOpen = false;
         if (this.activeTab !== 'home') {
           this.switchTab('home');
         } else {
@@ -1278,6 +1359,7 @@
         this.payViewYear = y; this.payViewMonth = m;
         this.memoYear = y; this.memoMonth = m; this.memoPayOffset = 0;
         this.calendarView = 'PAY';
+        this.ymPickerOpen = false;
         this.syncViewButtonsUI();
         this.switchTab('home');
       },
@@ -1666,6 +1748,7 @@
             $(`nav_${t}`).classList.toggle('bottom-nav-active', t === 'home');
           });
           this.calendarView = 'MEMO';
+          this.ymPickerOpen = false;
           this.syncViewButtonsUI();
           this.goToTodayMonth(true, true);
           this.scrollToTopClean();
@@ -2390,17 +2473,6 @@
         if (isT) return `<div class="-mx-1 -mt-1 px-1.5 py-1 bg-blue-600 text-white flex items-center justify-between gap-0.5 mb-1 leading-none"><span class="text-[9.5px] font-black tracking-tighter nowrap">${dtTxt}</span><span class="w-3.5 h-3.5 rounded-[2px] flex items-center justify-center text-[8px] font-black shrink-0 badge-${bk}">${this.SHIFT_CHAR[bk]}</span></div>`;
         return `<div class="flex items-center justify-between gap-0.5 mb-0.5 leading-none"><span class="text-[10px] font-black ${dc} tracking-tighter nowrap">${dtTxt}</span><span class="w-3.5 h-3.5 rounded flex items-center justify-center text-[8px] font-black shrink-0 badge-${bk}">${this.SHIFT_CHAR[bk]}</span></div>`;
       },
-      renderQuickMonthBar() {
-        const b = $('quick_month_grid');
-        if (!b) return;
-        const am = (this.calendarView === 'MEMO') ? this.memoMonth : this.payViewMonth;
-        let h = '';
-        for (let m = 1; m <= 12; m++) {
-          const c = (m === am) ? 'py-1.5 rounded-lg bg-blue-600 text-white font-black shadow-sm active:scale-95 transition' : 'py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-800 font-black active:scale-95 transition';
-          h += `<button onclick="App.jumpToCalendarMonth(${m})" class="${c}">${m}월</button>`;
-        }
-        b.innerHTML = h;
-      },
 
       renderVacationDatesList(targetYear = this.getActiveVacationYear()) {
         const box = $('vac_dates_list_box'), lbl = $('vac_list_count_label');
@@ -2484,7 +2556,7 @@
           return;
         }
 
-        this.renderQuickMonthBar();
+        this.renderYmPicker();
         this.updateStampUI();
         this.renderMemoHub();
 
