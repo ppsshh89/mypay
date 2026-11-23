@@ -11,7 +11,7 @@
   <link id="dynamic_favicon" rel="icon" type="image/png" href="./icon-192.png">
   <link id="dynamic_apple_icon" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="manifest" href="./manifest.json">
-  <title>스마트 월급·퇴직금 계산기 v9.6</title>
+  <title>스마트 월급·퇴직금 계산기 v9.7</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -40,7 +40,15 @@
     .nowrap { white-space: nowrap; }
     .tnum { font-variant-numeric: tabular-nums; }
     .memo-chip { width: 100%; color: #0f172a; font-size: clamp(7.4px, 2vw, 8.5px); font-weight: 800; letter-spacing: -.05em; line-height: 1.2; padding: 2px; border-radius: 3px; word-break: keep-all; overflow-wrap: break-word; white-space: normal; text-align: left; box-sizing: border-box; }
-    .work-top-chip { width: 100%; font-size: clamp(7.5px, 2.05vw, 8.6px); font-weight: 900; letter-spacing: -.05em; line-height: 1.15; padding: 1px 0; background: transparent !important; border: none !important; text-align: center; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+    /* [안 A] 메모뷰 근무 기록 원색 솔리드 배지 */
+    .work-top-chip { width: 100%; font-size: clamp(7.3px, 2vw, 8.3px); font-weight: 900; letter-spacing: -.05em; line-height: 1.22; padding: 1.5px 2px; border-radius: 3px; text-align: center; white-space: nowrap; overflow: hidden; box-sizing: border-box; box-shadow: 0 1px 1.5px rgba(15,23,42,0.16); }
+    .work-chip-hol-day { background: #dc2626; color: #ffffff; }
+    .work-chip-hol-night { background: #6b21a8; color: #fef08a; }
+    .work-chip-ot { background: #2563eb; color: #ffffff; }
+    .work-chip-night-ot { background: #4338ca; color: #ffffff; }
+    .work-chip-leave { background: #059669; color: #ffffff; }
+    .work-chip-gongga { background: #0284c7; color: #ffffff; }
+    .work-chip-req-edu { background: #0f766e; color: #ffffff; }
     @keyframes focusPulse {
       0%, 100% {
         background-color: #eff6ff;
@@ -52,15 +60,15 @@
       }
     }
     #calendar_grid .cell-focused {
-      animation: focusPulse 0.45s ease-in-out 2 !important;
+      animation: focusPulse 0.45s ease-in-out 3 !important;
       box-shadow: inset 0 0 0 2.5px #2563eb;
       z-index: 25 !important;
       position: relative;
     }
     @keyframes slideL { from { opacity: .7; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes slideR { from { opacity: .7; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-    .swipe-left-anim { animation: slideL .12s ease-out; }
-    .swipe-right-anim { animation: slideR .12s ease-out; }
+    .swipe-left-anim { animation: slideL .14s ease-out; }
+    .swipe-right-anim { animation: slideR .14s ease-out; }
   </style>
 </head>
 <body>
@@ -211,17 +219,17 @@
                 <div class="bg-sky-50/80 p-2 rounded-xl border border-sky-200">
                   <label class="text-[9.5px] font-extrabold text-sky-950 block mb-0.5 nowrap">1. 급여 (근로급여)</label>
                   <span class="text-[8px] font-bold text-sky-700 block mb-1 nowrap">퇴직금 3개월평균 직결</span>
-                  <input type="number" id="input_exact_wage" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-sky-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
+                  <input type="number" inputmode="numeric" id="input_exact_wage" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-sky-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
                 </div>
                 <div class="bg-indigo-50/80 p-2 rounded-xl border border-indigo-200">
                   <label class="text-[9.5px] font-extrabold text-indigo-950 block mb-0.5 nowrap">2. 상여 (상여·성과)</label>
                   <span class="text-[8px] font-bold text-indigo-700 block mb-1 nowrap">연봉합산·퇴직금제외</span>
-                  <input type="number" id="input_exact_bonus" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-indigo-300 rounded-lg font-black text-right bg-white text-indigo-900 text-[11px] tnum">
+                  <input type="number" inputmode="numeric" id="input_exact_bonus" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-indigo-300 rounded-lg font-black text-right bg-white text-indigo-900 text-[11px] tnum">
                 </div>
                 <div class="bg-emerald-50/80 p-2 rounded-xl border border-emerald-300">
                   <label class="text-[9.5px] font-extrabold text-emerald-950 block mb-0.5 nowrap">3. 차감지급액(세후)</label>
                   <span class="text-[8px] font-bold text-emerald-700 block mb-1 nowrap">지급현황표 세후금액</span>
-                  <input type="number" id="input_exact_net" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-emerald-400 rounded-lg font-black text-right bg-white text-emerald-900 text-[11px] tnum">
+                  <input type="number" inputmode="numeric" id="input_exact_net" step="10" placeholder="자동계산" oninput="App.onExtraInput()" class="w-full p-1 border border-emerald-400 rounded-lg font-black text-right bg-white text-emerald-900 text-[11px] tnum">
                 </div>
               </div>
 
@@ -232,7 +240,7 @@
                   <span id="badge_month_ins_state" class="text-[8px] font-bold text-rose-600 shrink-0">이전달 유지</span>
                 </div>
                 <span class="text-[8.5px] font-bold text-rose-700 block mb-1 tracking-tight">(사내대출 시 주택자금상환액도 더할것, 주택자금(이자)은 더하지않음)</span>
-                <input type="number" id="input_month_fixed_ins" step="100" placeholder="4대보험 입력(이후 자동이월)" oninput="App.onExtraInput()" class="w-full p-1 border border-rose-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
+                <input type="number" inputmode="numeric" id="input_month_fixed_ins" step="100" placeholder="4대보험 입력(이후 자동이월)" oninput="App.onExtraInput()" class="w-full p-1 border border-rose-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
               </div>
             </div>
 
@@ -249,7 +257,7 @@
                   <label class="text-[9.5px] font-extrabold text-blue-950">1. 당월 기본급(기본급 변동 시 수정바람)(자동이월)</label>
                   <span id="badge_month_base_state" class="text-[8px] font-bold text-blue-600 shrink-0">이전달 유지</span>
                 </div>
-                <input type="number" id="input_month_base_pay" step="1000" placeholder="기본급 입력(이후 자동이월)" oninput="App.onExtraInput()" class="w-full p-1 border border-blue-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
+                <input type="number" inputmode="numeric" id="input_month_base_pay" step="1000" placeholder="기본급 입력(이후 자동이월)" oninput="App.onExtraInput()" class="w-full p-1 border border-blue-300 rounded-lg font-black text-right bg-white text-slate-900 text-[11px] tnum">
               </div>
 
               <!-- 2. 소급분 반영 -->
@@ -261,11 +269,11 @@
                 <div class="grid grid-cols-2 gap-1.5 text-xs">
                   <div>
                     <label class="text-[9px] font-extrabold text-amber-900 block mb-0.5 nowrap">소급분(지급 · 세전)</label>
-                    <input type="number" id="input_retro_gross" step="10" placeholder="0 (평소 공란)" oninput="App.onExtraInput()" class="w-full p-1 border border-amber-300 rounded-lg font-black text-right bg-white text-amber-950 text-[11px] tnum">
+                    <input type="number" inputmode="numeric" id="input_retro_gross" step="10" placeholder="0 (평소 공란)" oninput="App.onExtraInput()" class="w-full p-1 border border-amber-300 rounded-lg font-black text-right bg-white text-amber-950 text-[11px] tnum">
                   </div>
                   <div>
                     <label class="text-[9px] font-extrabold text-rose-800 block mb-0.5 nowrap">소급분(공제 · 세금등)</label>
-                    <input type="number" id="input_retro_ded" step="10" placeholder="0 (평소 공란)" oninput="App.onExtraInput()" class="w-full p-1 border border-rose-300 rounded-lg font-black text-right bg-white text-rose-900 text-[11px] tnum">
+                    <input type="number" inputmode="numeric" id="input_retro_ded" step="10" placeholder="0 (평소 공란)" oninput="App.onExtraInput()" class="w-full p-1 border border-rose-300 rounded-lg font-black text-right bg-white text-rose-900 text-[11px] tnum">
                   </div>
                 </div>
               </div>
@@ -336,11 +344,11 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">인상 전 기본급 (원)</label>
-              <input type="number" id="retro_old_base" value="0" step="1000" oninput="App.onRetroSimInput()" class="w-full p-1.5 border border-slate-300 rounded-xl font-black text-right bg-slate-50">
+              <input type="number" inputmode="numeric" id="retro_old_base" value="0" step="1000" oninput="App.onRetroSimInput()" class="w-full p-1.5 border border-slate-300 rounded-xl font-black text-right bg-slate-50">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-emerald-800 mb-0.5">인상 후 기본급 (원)</label>
-              <input type="number" id="retro_new_base" value="0" step="1000" oninput="App.onRetroSimInput()" class="w-full p-1.5 border-2 border-emerald-500 rounded-xl font-black text-right bg-white text-emerald-900">
+              <input type="number" inputmode="numeric" id="retro_new_base" value="0" step="1000" oninput="App.onRetroSimInput()" class="w-full p-1.5 border-2 border-emerald-500 rounded-xl font-black text-right bg-white text-emerald-900">
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2 text-xs items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
@@ -434,7 +442,6 @@
           </div>
         </div>
       </div>
-
       <!-- TAB 4: 수당 단가표 -->
       <div id="tab_rates" class="hidden space-y-2.5 px-2 pt-2">
         <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200">
@@ -523,8 +530,8 @@
           </details>
 
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div><label id="label_total_vac" class="block font-bold text-slate-700 mb-1 nowrap">올해 총 연차 (일)</label><input type="number" id="input_total_vac" value="15" step="0.5" onchange="App.saveSettings()" class="w-full p-2 border border-slate-300 rounded-xl font-black text-center"></div>
-            <div><label id="label_prior_vac" class="block font-bold text-slate-700 mb-1 nowrap">달력 외 기사용 연차 (일)</label><input type="number" id="input_prior_used_vac" value="0" step="0.125" onchange="App.saveSettings()" class="w-full p-2 border border-slate-300 rounded-xl font-black text-center"></div>
+            <div><label id="label_total_vac" class="block font-bold text-slate-700 mb-1 nowrap">올해 총 연차 (일)</label><input type="number" inputmode="decimal" id="input_total_vac" value="15" step="0.5" oninput="App.saveSettings(true)" onchange="App.saveSettings()" class="w-full p-2 border border-slate-300 rounded-xl font-black text-center"></div>
+            <div><label id="label_prior_vac" class="block font-bold text-slate-700 mb-1 nowrap">달력 외 기사용 연차 (일)</label><input type="number" inputmode="decimal" id="input_prior_used_vac" value="0" step="0.125" oninput="App.saveSettings(true)" onchange="App.saveSettings()" class="w-full p-2 border border-slate-300 rounded-xl font-black text-center"></div>
           </div>
           <div class="pt-2 border-t border-slate-100 text-xs">
             <label class="block font-bold text-indigo-900 mb-1 nowrap">📅 입사일 (퇴직금 기산일)</label>
@@ -564,8 +571,8 @@
       <button id="nav_settings" onclick="App.switchTab('settings', true)" class="py-0.5 flex flex-col items-center gap-0.5 active:scale-95 transition"><span class="text-base leading-none">⚙️</span><span>설정·백업</span></button>
     </nav>
 
-    <!-- 일자별 상세 설정 모달 -->
-    <div id="day_modal" class="fixed inset-0 bg-slate-900/60 hidden items-end justify-center z-50">
+    <!-- 일자별 상세 설정 모달 (어두운 배경 터치 시 닫힘) -->
+    <div id="day_modal" onclick="if(event.target.id==='day_modal') App.closeDayModal()" class="fixed inset-0 bg-slate-900/60 hidden items-end justify-center z-50">
       <div class="bg-white rounded-t-3xl max-w-[430px] w-full p-3.5 max-h-[92vh] overflow-y-auto overflow-x-hidden box-border shadow-2xl">
         <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2.5 gap-2">
           <div class="min-w-0 flex-1">
@@ -584,12 +591,13 @@
             <div class="flex items-center justify-between gap-1">
               <span class="font-black text-slate-900 text-xs truncate">📝 스케줄 · 메모 <span class="text-[9.5px] font-bold text-amber-800">(메모뷰 전용)</span></span>
               <div class="flex items-center gap-1 shrink-0">
-                <button onclick="App.rerollMemoColor()" class="px-2 py-0.5 rounded-lg bg-white border border-slate-300 text-[10px] font-extrabold text-slate-700">🎨 색바꾸기</button>
-                <button onclick="App.clearMemoOnly()" class="px-2 py-0.5 rounded-lg bg-white border border-rose-200 text-[10px] font-extrabold text-rose-600">메모삭제</button>
+                <span id="modal_memo_color_dot" class="w-4 h-4 rounded-full border border-slate-400 inline-block shrink-0"></span>
+                <button onclick="App.rerollMemoColor()" class="px-2 py-0.5 rounded-lg bg-white border border-slate-300 text-[10px] font-extrabold text-slate-700 active:scale-95">🎨 색바꾸기</button>
+                <button onclick="App.clearMemoOnly()" class="px-2 py-0.5 rounded-lg bg-white border border-rose-200 text-[10px] font-extrabold text-rose-600 active:scale-95">메모삭제</button>
               </div>
             </div>
-            <textarea id="modal_memo_input" rows="2" placeholder="일상 메모 입력 (엔터로 새 색상박스 구분)" class="w-full p-2 rounded-xl border border-amber-300 bg-white font-bold text-slate-900 text-xs box-border"></textarea>
-            <button onclick="App.saveMemoOnly()" class="w-full py-2 rounded-xl bg-slate-900 text-white font-black text-xs shadow-sm">💾 메모만 바로 저장하기</button>
+            <textarea id="modal_memo_input" rows="2" placeholder="일상 메모 입력 (엔터로 새 색상박스 구분)" class="w-full p-2 rounded-xl border-2 border-amber-300 bg-white font-bold text-slate-900 text-xs box-border transition-colors"></textarea>
+            <button onclick="App.saveMemoOnly()" class="w-full py-2 rounded-xl bg-slate-900 text-white font-black text-xs shadow-sm active:scale-95 transition">💾 메모만 바로 저장하기</button>
           </div>
 
           <!-- 2. 급여뷰 전용 공제 메모 & 금액 직접 입력 (예상 세후월급 차감 반영) -->
@@ -605,7 +613,7 @@
               </div>
               <div class="col-span-6">
                 <label class="text-[9px] font-extrabold text-rose-900 block mb-0.5">차감할 금액 직접 입력 (원)</label>
-                <input type="number" id="modal_pay_ded_input" step="100" placeholder="예: 42000, 50000" class="w-full p-1.5 rounded-xl border border-rose-300 bg-white font-black text-right text-rose-900 text-xs box-border tnum">
+                <input type="number" inputmode="numeric" id="modal_pay_ded_input" step="100" placeholder="예: 42000, 50000" class="w-full p-1.5 rounded-xl border border-rose-300 bg-white font-black text-right text-rose-900 text-xs box-border tnum">
               </div>
             </div>
             <div class="grid grid-cols-4 gap-1 text-[10px] font-extrabold">
@@ -619,9 +627,12 @@
 
           <!-- 특수 근태·휴일·공가·교육 정식 배지 지정 -->
           <div class="grid grid-cols-2 gap-1.5">
-            <button id="btn_company_holiday" onclick="App.toggleCompanyHoliday()" class="col-span-2 py-2 px-2 rounded-xl border-2 border-rose-400 bg-rose-50 text-rose-700 font-black text-[11px] truncate">🎉 약정·노조휴일 지정</button>
-            <button onclick="App.applyDay('GONGGA',0)" class="py-2 px-2 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-800 font-black text-[11px] truncate">🏥 유급공가(검진·경조)</button>
-            <button onclick="App.applyDay('REQ_EDU',0)" class="py-2 px-2 rounded-xl border-2 border-teal-400 bg-teal-50 text-teal-900 font-black text-[11px] truncate">🏫 필수교육(09~18시)</button>
+            <div class="col-span-2 flex items-center gap-1.5">
+              <input type="text" id="modal_comphol_name" maxlength="10" placeholder="휴일명(비우면 약정휴일)" class="w-[44%] py-2 px-2 rounded-xl border border-rose-300 bg-white font-bold text-slate-800 text-[10.5px] box-border">
+              <button id="btn_company_holiday" onclick="App.toggleCompanyHoliday()" class="flex-1 py-2 px-2 rounded-xl border-2 border-rose-400 bg-rose-50 text-rose-700 font-black text-[11px] truncate active:scale-95 transition">🎉 약정·임시휴일 지정</button>
+            </div>
+            <button onclick="App.applyDay('GONGGA',0)" class="py-2 px-2 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-800 font-black text-[11px] truncate active:scale-95 transition">🏥 유급공가(검진·경조)</button>
+            <button onclick="App.applyDay('REQ_EDU',0)" class="py-2 px-2 rounded-xl border-2 border-teal-400 bg-teal-50 text-teal-900 font-black text-[11px] truncate active:scale-95 transition">🏫 필수교육(09~18시)</button>
           </div>
 
           <div class="bg-red-50/60 p-2.5 rounded-2xl border border-red-200 w-full box-border">
@@ -695,8 +706,11 @@
       { bg: '#f5d0fe', border: '#e879f9' }, { bg: '#a5f3fc', border: '#22d3ee' }
     ];
 
+    /* 수십 년간(1900~2100+) 한국 표준시(KST·단기력) 기반 자동 공휴일·대체공휴일·정기선거일 엔진 */
     const KoreanHolidayEngine = {
       cache: {},
+      lunarDynamicCache: {},
+      _lunarFmt: undefined,
       LUNAR_TABLE: {
         2020: ['01-25', '04-30', '10-01'], 2021: ['02-12', '05-19', '09-21'], 2022: ['02-01', '05-08', '09-10'],
         2023: ['01-22', '05-27', '09-29'], 2024: ['02-10', '05-15', '09-17'], 2025: ['01-29', '05-05', '10-06'],
@@ -712,9 +726,58 @@
         const dt = new Date(y, m - 1, d + delta, 12, 0, 0), ny = dt.getFullYear(), nm = dt.getMonth() + 1, nd = dt.getDate();
         return { y: ny, m: nm, d: nd, dow: dt.getDay(), key: this.fmt(ny, nm, nd) };
       },
+      getLunarFormatter() {
+        if (this._lunarFmt !== undefined) return this._lunarFmt;
+        const tryLocale = loc => {
+          try {
+            const fmt = new Intl.DateTimeFormat(loc, { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' });
+            const getMD = (y, m, d) => {
+              const parts = fmt.formatToParts(new Date(y, m - 1, d, 12, 0, 0));
+              return {
+                m: parts.find(p => p.type === 'month')?.value || '',
+                d: parts.find(p => p.type === 'day')?.value || ''
+              };
+            };
+            const s26 = getMD(2026, 2, 17), b26 = getMD(2026, 5, 24), c26 = getMD(2026, 9, 25);
+            if (!s26.m || !s26.d || !b26.m || !b26.d || !c26.m || !c26.d) return null;
+            if (s26.m === b26.m || b26.m === c26.m) return null;
+            const s25 = getMD(2025, 1, 29);
+            if (s25.m !== s26.m || s25.d !== s26.d) return null;
+            return { getMD, sTok: s26, bTok: b26, cTok: c26 };
+          } catch (e) { return null; }
+        };
+        const dangi = tryLocale('en-US-u-ca-dangi');
+        if (dangi) {
+          const chk27 = dangi.getMD(2027, 2, 7);
+          if (chk27.m === dangi.sTok.m && chk27.d === dangi.sTok.d) return (this._lunarFmt = dangi);
+        }
+        return (this._lunarFmt = dangi || tryLocale('en-US-u-ca-chinese') || null);
+      },
+      getLunarDates(year) {
+        if (this.LUNAR_TABLE[year]) return this.LUNAR_TABLE[year];
+        if (this.lunarDynamicCache[year]) return this.lunarDynamicCache[year];
+        const eng = this.getLunarFormatter();
+        if (eng) {
+          const scan = (startM, startD, days, tok) => {
+            for (let i = 0; i < days; i++) {
+              const dt = new Date(year, startM - 1, startD + i, 12, 0, 0);
+              const ny = dt.getFullYear(), nm = dt.getMonth() + 1, nd = dt.getDate();
+              const md = eng.getMD(ny, nm, nd);
+              if (md.m === tok.m && md.d === tok.d) {
+                return `${String(nm).padStart(2, '0')}-${String(nd).padStart(2, '0')}`;
+              }
+            }
+            return null;
+          };
+          const s = scan(1, 20, 35, eng.sTok), b = scan(4, 25, 42, eng.bTok), c = scan(9, 5, 40, eng.cTok);
+          if (s && b && c) return (this.lunarDynamicCache[year] = [s, b, c]);
+        }
+        return ['02-17', '05-24', '09-25'];
+      },
       buildYearHolidays(year) {
         if (this.cache[year]) return this.cache[year];
-        const map = {}, occ = new Set(), [sMD, bMD, cMD] = this.LUNAR_TABLE[year] || ['02-17', '05-24', '09-25'];
+        const map = {}, occ = new Set(), subTriggered = new Set();
+        const [sMD, bMD, cMD] = this.getLunarDates(year);
         const pMD = md => { const [m, d] = md.split('-').map(Number); return { m, d }; };
         const s = pMD(sMD), b = pMD(bMD), c = pMD(cMD);
         const groups = [
@@ -734,9 +797,21 @@
           g.subNeeded = 0;
           g.days.forEach(day => {
             const dup = occ.has(day.key); occ.add(day.key);
-            if (!map[day.key] || day.name === '설날' || day.name === '추석') map[day.key] = day.name;
-            if (g.subRule === 'SAT_SUN' && (day.dow === 0 || day.dow === 6 || dup)) g.subNeeded++;
-            else if (g.subRule === 'SUN_ONLY' && (day.dow === 0 || dup)) g.subNeeded++;
+            if (!map[day.key]) {
+              map[day.key] = day.name;
+            } else if (!map[day.key].split('·').includes(day.name)) {
+              if (day.name === '설날' || day.name === '추석') {
+                map[day.key] = `${day.name}·${map[day.key]}`;
+              } else {
+                map[day.key] = `${map[day.key]}·${day.name}`;
+              }
+            }
+            const needsSub = (g.subRule === 'SAT_SUN' && (day.dow === 0 || day.dow === 6 || dup))
+              || (g.subRule === 'SUN_ONLY' && (day.dow === 0 || dup));
+            if (needsSub && !subTriggered.has(day.key)) {
+              subTriggered.add(day.key);
+              g.subNeeded++;
+            }
           });
         });
         groups.forEach(g => {
@@ -748,14 +823,33 @@
         });
         const mayKey = this.fmt(year, 5, 1);
         if (!map[mayKey]) map[mayKey] = '근로자의날';
-        if (year === 2026) map['2026-06-03'] = '지방선거';
+
+        /* 2026년 이후 정기 법정 선거일 자동 계산 (공직선거법 제34조) */
+        if (year >= 2026) {
+          const resolveWedElection = (startM, startD, label) => {
+            let cur = this.addDays(year, startM, startD, 0);
+            while (cur.dow !== 3) cur = this.addDays(cur.y, cur.m, cur.d, 1);
+            for (let guard = 0; guard < 4; guard++) {
+              const prev = this.addDays(cur.y, cur.m, cur.d, -1);
+              const next = this.addDays(cur.y, cur.m, cur.d, 1);
+              if (map[cur.key] || map[prev.key] || map[next.key]) cur = this.addDays(cur.y, cur.m, cur.d, 7);
+              else break;
+            }
+            if (!map[cur.key]) map[cur.key] = label;
+          };
+          if (year % 4 === 0 && year >= 2028) resolveWedElection(4, 9, '국회의원선거');
+          if (year % 4 === 2) resolveWedElection(6, 1, '지방선거');
+        }
         return (this.cache[year] = map);
       },
       getHolidayName(y, m, d) { return this.buildYearHolidays(y)[this.fmt(y, m, d)] || null; },
       getFestivalInCalendarMonth(year, month) {
         const map = this.buildYearHolidays(year), prefix = `${year}-${String(month).padStart(2, '0')}-`;
         for (const [k, v] of Object.entries(map)) {
-          if (k.startsWith(prefix) && (v === '설날' || v === '추석')) return { key: k, name: v };
+          if (!k.startsWith(prefix)) continue;
+          const parts = v.split('·');
+          if (parts.includes('설날')) return { key: k, name: '설날' };
+          if (parts.includes('추석')) return { key: k, name: '추석' };
         }
         return null;
       }
@@ -819,9 +913,11 @@
       memoHubExpanded: false,
       focusedDateKey: null,
       focusClearTimer: null,
+      focusDelayTimer: null,
 
       ghToken: '', ghGistId: '', ghAutoSync: true, ghLastSync: '',
       autoSyncTimer: null,
+      isCloudSyncing: false,
       inputSaveTimer: null,
       calendarView: 'MEMO', selectedDateKey: null, selectedDayInfo: null,
       swipeAnimClass: '',
@@ -1187,8 +1283,9 @@
         const k = this.formatKey(y, m, d);
         this.focusedDateKey = k;
         this.render(false);
-        this.triggerFocusFlash(k);
         this.scrollToTopClean();
+        clearTimeout(this.focusDelayTimer);
+        this.focusDelayTimer = setTimeout(() => this.triggerFocusFlash(k), 280);
       },
 
       triggerFocusFlash(dateKey) {
@@ -1207,7 +1304,7 @@
           this.focusedDateKey = null;
           const g = $('calendar_grid');
           if (g) g.querySelectorAll('.cell-focused').forEach(el => el.classList.remove('cell-focused'));
-        }, 950);
+        }, 1450);
       },
 
       scrollToTopClean() {
@@ -1221,7 +1318,7 @@
         if (r.memo) { next.memo = r.memo; next.memoColor = r.memoColor; }
         if (r.payMemo) next.payMemo = r.payMemo;
         if (r.payDed && Number(r.payDed) > 0) next.payDed = Number(r.payDed);
-        if (r.compHol) next.compHol = r.compHol;
+        if (r.compHol) { next.compHol = r.compHol; if (r.compHolName) next.compHolName = r.compHolName; }
         if (r.customShift && r.shift) {
           next.type = 'NORMAL';
           next.hours = 0;
@@ -1308,9 +1405,14 @@
         return null;
       },
       async cloudBackupToGithub(silent = false) {
+        clearTimeout(this.autoSyncTimer);
+        this.autoSyncTimer = null;
+        if (this.isCloudSyncing) return;
         const t = ($('input_gh_token')?.value || '').trim() || this.ghToken;
         if (!t) { if (!silent) alert('깃허브 열쇠 번호를 입력해 주세요.'); return; }
-        this.ghToken = t; this.updateGithubUiStatus('⏳ 백업 중...');
+        this.ghToken = t;
+        this.isCloudSyncing = true;
+        this.updateGithubUiStatus('⏳ 백업 중...');
         try {
           let gid = await this.findExistingGistId(t);
           const body = { description: '스마트 월급계산기 백업 금고', public: false, files: { [this.GIST_FILENAME]: { content: JSON.stringify(this.getExportPayload(false), null, 2) } } };
@@ -1323,11 +1425,17 @@
           this.save(true); this.updateGithubUiStatus('✔ 백업 완료');
           if (!silent) alert('☁️ 깃허브 비공개 금고에 백업되었습니다!');
         } catch (e) { this.updateGithubUiStatus('⚠️ 열쇠 확인', true); if (!silent) alert('백업 실패: 열쇠 번호를 확인해 주세요.'); }
+        finally { this.isCloudSyncing = false; }
       },
       async cloudRestoreFromGithub() {
+        clearTimeout(this.autoSyncTimer);
+        this.autoSyncTimer = null;
+        if (this.isCloudSyncing) return;
         const t = ($('input_gh_token')?.value || '').trim() || this.ghToken;
         if (!t) return alert('깃허브 열쇠 번호를 먼저 입력해 주세요.');
-        this.ghToken = t; this.updateGithubUiStatus('⏳ 복원 중...');
+        this.ghToken = t;
+        this.isCloudSyncing = true;
+        this.updateGithubUiStatus('⏳ 복원 중...');
         try {
           this.ghGistId = ''; const gid = await this.findExistingGistId(t);
           if (!gid) { this.updateGithubUiStatus(); return alert('백업 파일을 찾지 못했습니다.'); }
@@ -1341,6 +1449,7 @@
           this.updateGithubUiStatus('✔ 복원 완료');
           alert('📥 깃허브 금고에서 데이터를 복원했습니다!'); this.switchTab('home');
         } catch (e) { this.updateGithubUiStatus('⚠️ 복원 오류', true); alert('복원에 실패했습니다.'); }
+        finally { this.isCloudSyncing = false; }
       },
 
       jumpToCalendarMonth(m) {
@@ -1363,7 +1472,6 @@
         this.syncViewButtonsUI();
         this.switchTab('home');
       },
-
       initModalButtons() {
         const hs = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11];
         setHtml('modal_day_hol_btns', hs.map(h => `<button onclick="App.applyDay('HOLIDAY',${h},'DAY')" class="py-1 rounded-lg bg-white border border-red-200 text-red-700 font-bold">${h}h</button>`).join(''));
@@ -1402,6 +1510,7 @@
       },
 
       changeSettingsVacYear(delta) {
+        this.flushPendingSave();
         this.settingsVacYear = (this.settingsVacYear || this.getActiveVacationYear()) + delta;
         this.syncSettingsInputs();
         this.render();
@@ -1500,7 +1609,7 @@
 
       getExportPayload(inc = true) {
         const p = {
-          version: '9.6', exportedAt: new Date().toISOString(),
+          version: '9.7', exportedAt: new Date().toISOString(),
           basePay: this.basePay, fixedInsurance: this.fixedInsurance,
           retroOldBase: this.retroOldBase, retroNewBase: this.retroNewBase,
           retroStartM: this.retroStartM, retroEndM: this.retroEndM,
@@ -1786,20 +1895,24 @@
         if ($('input_gh_token')) $('input_gh_token').value = this.ghToken || '';
         if ($('chk_gh_auto_sync')) $('chk_gh_auto_sync').checked = this.ghAutoSync;
       },
-      saveSettings() {
+      saveSettings(isTyping = false) {
         const targetY = this.settingsVacYear || this.getActiveVacationYear();
         const yKey = String(targetY);
-        const totalV = Number($('input_total_vac')?.value) || 0;
-        const priorV = Math.max(0, Number($('input_prior_used_vac')?.value) || 0);
+        const totalRaw = ($('input_total_vac')?.value || '').trim();
+        const priorRaw = ($('input_prior_used_vac')?.value || '').trim();
+        if (isTyping && (totalRaw === '' || priorRaw === '')) return;
+        const totalV = Number(totalRaw) || 0;
+        const priorV = Math.max(0, Number(priorRaw) || 0);
         if (!this.vacationByYear) this.vacationByYear = {};
         this.vacationByYear[yKey] = { total: totalV, prior: priorV };
         if (Number(targetY) === 2026) {
           this.totalVacation = totalV;
           this.priorUsedVacation = priorV;
         }
-
         if ($('input_hire_date')) this.hireDate = $('input_hire_date').value || '2020-01-01';
-        this.save(); this.render();
+        if (isTyping) this.saveDebounced();
+        else this.save();
+        this.render();
       },
 
       getMonthKey(y, m) { return `${y}-${String(m).padStart(2, '0')}`; },
@@ -1950,7 +2063,8 @@
 
       evaluateDay(y, m, d, isOther = false) {
         const key = this.formatKey(y, m, d), dow = new Date(y, m - 1, d, 12, 0, 0).getDay(), rec = this.records[key] || {};
-        const compHol = Boolean(rec.compHol), sysHol = KoreanHolidayEngine.getHolidayName(y, m, d), holidayName = sysHol || (compHol ? '약정휴일' : null);
+        const compHol = Boolean(rec.compHol), compHolName = (rec.compHolName || '').trim();
+        const sysHol = KoreanHolidayEngine.getHolidayName(y, m, d), holidayName = sysHol || (compHol ? (compHolName || '약정휴일') : null);
         const isWeekend = (dow === 0 || dow === 6), isRedOffDay = isWeekend || Boolean(holidayName), isSundayOrHol = (dow === 0 || Boolean(holidayName)), isSaturday = (dow === 6 && !holidayName);
         const defaultShift = this.getDefaultShift(y, m, d);
         let shift = rec.shift || defaultShift;
@@ -1991,7 +2105,7 @@
         let badgeKey = shift;
         if (type === 'OFF') badgeKey = 'OFF';
         else if (type === 'HOLIDAY') badgeKey = (holKind === 'NIGHT') ? 'NIGHT' : 'EARLY';
-        return { y, m, d, key, dow, isWeekend, isRedOffDay, isSundayOrHol, isSaturday, holidayName, compHol, dayName: this.DAY_KOR[dow], defaultShift, shift, badgeKey, type, holKind, otHours, holBaseHours, holOverHours, nightHours, vacDays, vacHours, memo, memoColor, payMemo, payDed, isOtherMonth: isOther };
+        return { y, m, d, key, dow, isWeekend, isRedOffDay, isSundayOrHol, isSaturday, holidayName, compHol, compHolName, dayName: this.DAY_KOR[dow], defaultShift, shift, badgeKey, type, holKind, otHours, holBaseHours, holOverHours, nightHours, vacDays, vacHours, memo, memoColor, payMemo, payDed, isOtherMonth: isOther };
       },
 
       getLeaveChipLabel(ev, isPay = false) {
@@ -2216,7 +2330,7 @@
         if (p.memo) { keep.memo = p.memo; keep.memoColor = p.memoColor; }
         if (p.payMemo) keep.payMemo = p.payMemo;
         if (p.payDed && Number(p.payDed) > 0) keep.payDed = Number(p.payDed);
-        if (p.compHol) keep.compHol = p.compHol;
+        if (p.compHol) { keep.compHol = p.compHol; if (p.compHolName) keep.compHolName = p.compHolName; }
         if (!w) {
           if (Object.keys(keep).length > 0) this.records[k] = keep;
           else delete this.records[k];
@@ -2229,17 +2343,39 @@
         this.invalidateSummaryCache();
         this.syncModalMemoToRecord(this.selectedDateKey);
         const c = this.records[this.selectedDateKey] || {};
+        const customName = ($('modal_comphol_name')?.value || '').trim();
         c.compHol = !c.compHol;
-        if (c.compHol && c.type !== 'HOLIDAY') {
-          delete c.type;
-          delete c.hours;
-          delete c.vacDays;
-          delete c.shift;
-          delete c.customShift;
+        if (c.compHol) {
+          if (customName) c.compHolName = customName;
+          else delete c.compHolName;
+          if (c.type !== 'HOLIDAY') {
+            delete c.type;
+            delete c.hours;
+            delete c.vacDays;
+            delete c.shift;
+            delete c.customShift;
+          }
+        } else {
+          delete c.compHolName;
         }
         if (!c.memo && !c.payMemo && !c.payDed && !c.type && !c.compHol) delete this.records[this.selectedDateKey];
         else this.records[this.selectedDateKey] = c;
         this.closeDayModal(); this.save(); this.render();
+      },
+
+      updateModalMemoColorPreview(colorIdx) {
+        const idx = ((Number(colorIdx) || 0) % PASTEL_PALETTE.length + PASTEL_PALETTE.length) % PASTEL_PALETTE.length;
+        const pal = PASTEL_PALETTE[idx];
+        const dot = $('modal_memo_color_dot');
+        const input = $('modal_memo_input');
+        if (dot) {
+          dot.style.background = pal.bg;
+          dot.style.borderColor = pal.border;
+        }
+        if (input) {
+          input.style.background = pal.bg;
+          input.style.borderColor = pal.border;
+        }
       },
 
       onCellTap(ev, forceModal = false) {
@@ -2277,13 +2413,15 @@
         if (ev.holidayName) { hb.innerText = `공휴일: ${ev.holidayName}`; hb.classList.remove('hidden'); }
         else hb.classList.add('hidden');
 
-        setText('btn_company_holiday', ev.compHol ? '🎉 약정·노조휴일 해제' : '🎉 약정·노조휴일 지정');
+        if ($('modal_comphol_name')) $('modal_comphol_name').value = ev.compHolName || '';
+        setText('btn_company_holiday', ev.compHol ? '🎉 약정·임시휴일 해제' : '🎉 약정·임시휴일 지정');
         setText('modal_leave_SubInfo', ev.shift === 'NIGHT'
           ? '🌙 야간조: 휴가 시간만큼 당일 야간수당(8h)에서 차감'
           : '☀️ 초·중반조: 시간차 사용 시 급여차감 0원');
 
         $('modal_shift_select').value = ev.shift;
         $('modal_memo_input').value = ev.memo || '';
+        this.updateModalMemoColorPreview(ev.memoColor);
         if ($('modal_pay_memo_input')) $('modal_pay_memo_input').value = ev.payMemo || '';
         if ($('modal_pay_ded_input')) $('modal_pay_ded_input').value = ev.payDed > 0 ? ev.payDed : '';
         const m = $('day_modal'); m.classList.remove('hidden'); m.classList.add('flex');
@@ -2310,7 +2448,11 @@
         const c = this.records[k] || {};
         if (mt) {
           c.memo = mt;
-          if (c.memoColor === undefined) c.memoColor = Math.floor(Math.random() * PASTEL_PALETTE.length);
+          if (c.memoColor === undefined) {
+            c.memoColor = (this.selectedDayInfo?.memoColor !== undefined)
+              ? Number(this.selectedDayInfo.memoColor)
+              : Math.floor(Math.random() * PASTEL_PALETTE.length);
+          }
         } else {
           delete c.memo;
           delete c.memoColor;
@@ -2319,18 +2461,31 @@
         else delete c.payMemo;
         if (pded > 0) c.payDed = pded;
         else delete c.payDed;
+        if (c.compHol) {
+          const cn = ($('modal_comphol_name')?.value || '').trim();
+          if (cn) c.compHolName = cn;
+          else delete c.compHolName;
+        }
         if (!c.memo && !c.payMemo && !c.payDed && !c.type && !c.compHol) delete this.records[k];
         else this.records[k] = c;
       },
       saveMemoOnly() { if (!this.selectedDateKey) return; this.invalidateSummaryCache(); this.syncModalMemoToRecord(this.selectedDateKey); this.closeDayModal(); this.save(); this.render(); },
       rerollMemoColor() {
         if (!this.selectedDateKey) return;
-        const mt = $('modal_memo_input').value.trim();
-        if (!mt) return;
         const c = this.records[this.selectedDateKey] || {};
-        c.memo = mt;
-        c.memoColor = ((c.memoColor || 0) + 1 + Math.floor(Math.random() * 3)) % PASTEL_PALETTE.length;
-        this.records[this.selectedDateKey] = c; this.save(); this.render();
+        const curColor = (c.memoColor !== undefined)
+          ? Number(c.memoColor)
+          : (this.selectedDayInfo?.memoColor ?? 0);
+        const nextColor = (curColor + 1) % PASTEL_PALETTE.length;
+        if (this.selectedDayInfo) this.selectedDayInfo.memoColor = nextColor;
+        this.updateModalMemoColorPreview(nextColor);
+        const mt = ($('modal_memo_input')?.value || '').trim();
+        if (mt) {
+          c.memo = mt;
+          c.memoColor = nextColor;
+          this.records[this.selectedDateKey] = c;
+          this.save(); this.render();
+        }
       },
       clearMemoOnly() {
         if (!this.selectedDateKey) return;
@@ -2397,6 +2552,7 @@
           return;
         }
         this.invalidateSummaryCache();
+        this.syncModalMemoToRecord(this.selectedDateKey);
         const synced = this.records[this.selectedDateKey] || {};
         if (tt === 'OFF') tt = 'NORMAL';
         const defSh = this.selectedDayInfo?.defaultShift;
@@ -2605,18 +2761,21 @@
         const holMode = calc.ex.manualHolBonus;
         setText('btn_toggle_hol_bonus', holMode === true ? '🌕 명절:강제ON' : (holMode === false ? '🌕 명절:강제OFF' : '🌕 명절:자동'));
 
+        const fmtFromYM = (fromKey) => {
+          const [fy, fm] = fromKey.split('-').map(Number);
+          return (fy !== ap.y) ? `${String(fy).slice(-2)}.${fm}월분` : `${fm}월분`;
+        };
+
         const baseStateEl = $('badge_month_base_state');
         if (baseStateEl) {
           if (calc.baseInfo.source === 'THIS_MONTH') {
             baseStateEl.innerText = `✔ ${ap.m}월 변경적용`;
             baseStateEl.className = 'text-[8px] font-black text-blue-700 bg-blue-100 px-1 rounded shrink-0';
           } else if (calc.baseInfo.source === 'CARRIED') {
-            const fm = Number(calc.baseInfo.fromKey.split('-')[1]);
-            baseStateEl.innerText = `↪ ${fm}월분 자동이월`;
+            baseStateEl.innerText = `↪ ${fmtFromYM(calc.baseInfo.fromKey)} 자동이월`;
             baseStateEl.className = 'text-[8px] font-bold text-indigo-600 shrink-0';
           } else if (calc.baseInfo.source === 'EARLIEST') {
-            const fm = Number(calc.baseInfo.fromKey.split('-')[1]);
-            baseStateEl.innerText = `↩ ${fm}월분 역참조`;
+            baseStateEl.innerText = `↩ ${fmtFromYM(calc.baseInfo.fromKey)} 역참조`;
             baseStateEl.className = 'text-[8px] font-bold text-sky-600 shrink-0';
           } else {
             baseStateEl.innerText = calc.appliedBase > 0 ? '기존 기본값 유지' : '미입력';
@@ -2630,12 +2789,10 @@
             insStateEl.innerText = `✔ ${ap.m}월 변경적용`;
             insStateEl.className = 'text-[8px] font-black text-rose-700 bg-rose-100 px-1 rounded shrink-0';
           } else if (calc.insInfo.source === 'CARRIED') {
-            const fm = Number(calc.insInfo.fromKey.split('-')[1]);
-            insStateEl.innerText = `↪ ${fm}월분 자동이월`;
+            insStateEl.innerText = `↪ ${fmtFromYM(calc.insInfo.fromKey)} 자동이월`;
             insStateEl.className = 'text-[8px] font-bold text-rose-600 shrink-0';
           } else if (calc.insInfo.source === 'EARLIEST') {
-            const fm = Number(calc.insInfo.fromKey.split('-')[1]);
-            insStateEl.innerText = `↩ ${fm}월분 역참조`;
+            insStateEl.innerText = `↩ ${fmtFromYM(calc.insInfo.fromKey)} 역참조`;
             insStateEl.className = 'text-[8px] font-bold text-pink-600 shrink-0';
           } else {
             insStateEl.innerText = calc.fixedInsurances > 0 ? '기존 기본값 유지' : '미입력';
@@ -2644,37 +2801,26 @@
         }
 
         const bonusPlaceholder = `예상 ${calc.autoBonus.toLocaleString()}`;
+        const basePlaceholder = calc.appliedBase > 0 ? `적용중 ${calc.appliedBase.toLocaleString()}` : '기본급 입력(이후 자동이월)';
+        const insPlaceholder = calc.fixedInsurances > 0 ? `적용중 ${calc.fixedInsurances.toLocaleString()}` : '4대보험 입력(이후 자동이월)';
+        const wIn = $('input_exact_wage'), bIn = $('input_exact_bonus'), nIn = $('input_exact_net');
+        const mBaseIn = $('input_month_base_pay'), mInsIn = $('input_month_fixed_ins');
+        const rgIn = $('input_retro_gross'), rdIn = $('input_retro_ded');
+
+        if (wIn) wIn.placeholder = `예상 ${calc.autoWage.toLocaleString()}`;
+        if (bIn) bIn.placeholder = bonusPlaceholder;
+        if (nIn) nIn.placeholder = `예상 ${calc.autoNet.toLocaleString()}`;
+        if (mBaseIn) mBaseIn.placeholder = basePlaceholder;
+        if (mInsIn) mInsIn.placeholder = insPlaceholder;
+
         if (!skipInput) {
-          const wIn = $('input_exact_wage'), bIn = $('input_exact_bonus'), nIn = $('input_exact_net');
-          const mBaseIn = $('input_month_base_pay'), mInsIn = $('input_month_fixed_ins');
-          const rgIn = $('input_retro_gross'), rdIn = $('input_retro_ded');
-          if (wIn) {
-            wIn.placeholder = `예상 ${calc.autoWage.toLocaleString()}`;
-            wIn.value = calc.ex.exactWage !== undefined ? calc.ex.exactWage : '';
-          }
-          if (bIn) {
-            bIn.placeholder = bonusPlaceholder;
-            bIn.value = calc.ex.exactBonus !== undefined ? calc.ex.exactBonus : '';
-          }
-          if (nIn) {
-            nIn.placeholder = `예상 ${calc.autoNet.toLocaleString()}`;
-            nIn.value = calc.ex.exactNet !== undefined ? calc.ex.exactNet : '';
-          }
-          if (mBaseIn) {
-            mBaseIn.placeholder = calc.appliedBase > 0 ? `적용중 ${calc.appliedBase.toLocaleString()}` : '기본급 입력(이후 자동이월)';
-            mBaseIn.value = calc.ex.customBasePay !== undefined ? calc.ex.customBasePay : '';
-          }
-          if (mInsIn) {
-            mInsIn.placeholder = calc.fixedInsurances > 0 ? `적용중 ${calc.fixedInsurances.toLocaleString()}` : '4대보험 입력(이후 자동이월)';
-            mInsIn.value = calc.ex.exactIns !== undefined ? calc.ex.exactIns : '';
-          }
+          if (wIn) wIn.value = calc.ex.exactWage !== undefined ? calc.ex.exactWage : '';
+          if (bIn) bIn.value = calc.ex.exactBonus !== undefined ? calc.ex.exactBonus : '';
+          if (nIn) nIn.value = calc.ex.exactNet !== undefined ? calc.ex.exactNet : '';
+          if (mBaseIn) mBaseIn.value = calc.ex.customBasePay !== undefined ? calc.ex.customBasePay : '';
+          if (mInsIn) mInsIn.value = calc.ex.exactIns !== undefined ? calc.ex.exactIns : '';
           if (rgIn) rgIn.value = calc.ex.retroGross !== undefined ? calc.ex.retroGross : '';
           if (rdIn) rdIn.value = calc.ex.retroDed !== undefined ? calc.ex.retroDed : '';
-        } else {
-          const wIn = $('input_exact_wage'), bIn = $('input_exact_bonus'), nIn = $('input_exact_net');
-          if (wIn) wIn.placeholder = `예상 ${calc.autoWage.toLocaleString()}`;
-          if (bIn) bIn.placeholder = bonusPlaceholder;
-          if (nIn) nIn.placeholder = `예상 ${calc.autoNet.toLocaleString()}`;
         }
 
         const diffNotice = $('slip_diff_notice');
@@ -2779,19 +2925,21 @@
             const chips = [];
             if (ev.type === 'HOLIDAY') {
               const th = this.fmtHoursLabel(ev.holBaseHours + ev.holOverHours);
-              chips.push(ev.holKind === 'NIGHT' ? `<div class="work-top-chip text-purple-800">🌙야특${th}</div>` : `<div class="work-top-chip text-red-600">☀️주특${th}</div>`);
-            } else if (ev.type === 'OT') chips.push(`<div class="work-top-chip text-blue-700">⚡+${ev.otHours}h잔업</div>`);
-            else if (ev.type === 'NIGHT_OT') chips.push(`<div class="work-top-chip text-indigo-800">🦉+${ev.otHours}h야잔</div>`);
-            else if (ev.type === 'LEAVE') chips.push(`<div class="work-top-chip text-emerald-700">${this.getLeaveChipLabel(ev, false)}</div>`);
-            else if (ev.type === 'GONGGA') chips.push(`<div class="work-top-chip text-sky-700">🏥유급공가</div>`);
-            else if (ev.type === 'REQ_EDU') chips.push(`<div class="work-top-chip text-teal-700">🏫필수교육</div>`);
+              chips.push(ev.holKind === 'NIGHT'
+                ? `<div class="work-top-chip work-chip-hol-night">🌙야특${th}</div>`
+                : `<div class="work-top-chip work-chip-hol-day">☀️주특${th}</div>`);
+            } else if (ev.type === 'OT') chips.push(`<div class="work-top-chip work-chip-ot">⚡+${ev.otHours}h잔업</div>`);
+            else if (ev.type === 'NIGHT_OT') chips.push(`<div class="work-top-chip work-chip-night-ot">🦉+${ev.otHours}h야잔</div>`);
+            else if (ev.type === 'LEAVE') chips.push(`<div class="work-top-chip work-chip-leave">${this.getLeaveChipLabel(ev, false)}</div>`);
+            else if (ev.type === 'GONGGA') chips.push(`<div class="work-top-chip work-chip-gongga">🏥유급공가</div>`);
+            else if (ev.type === 'REQ_EDU') chips.push(`<div class="work-top-chip work-chip-req-edu">🏫필수교육</div>`);
             if (ev.memo) {
               ev.memo.split('\n').map(l => l.trim()).filter(Boolean).forEach((ln, mIdx) => {
                 const pal = PASTEL_PALETTE[(ev.memoColor + mIdx * 3) % PASTEL_PALETTE.length];
                 chips.push(`<div class="memo-chip" style="background:${pal.bg};border:1px solid ${pal.border}">${this.escapeHtml(ln)}</div>`);
               });
             }
-            htmlParts.push(`<div data-cell-idx="${idx}" data-date-key="${ev.key}" class="p-1 ${ch} min-w-0 overflow-hidden flex flex-col justify-start cursor-pointer active:scale-95 transition ${cs}">${this.buildCellHeaderHtml(dl, dc, isT, ev.badgeKey)}${ev.holidayName ? `<div class="text-[7.5px] font-extrabold text-red-600 leading-tight truncate text-center mb-0.5">${ev.holidayName}</div>` : ''}<div class="flex flex-col gap-[1.5px] w-full">${chips.join('')}</div></div>`);
+            htmlParts.push(`<div data-cell-idx="${idx}" data-date-key="${ev.key}" class="p-1 ${ch} min-w-0 overflow-hidden flex flex-col justify-start cursor-pointer active:scale-95 transition ${cs}">${this.buildCellHeaderHtml(dl, dc, isT, ev.badgeKey)}${ev.holidayName ? `<div class="text-[7.5px] font-extrabold text-red-600 leading-tight truncate text-center mb-0.5">${this.escapeHtml(ev.holidayName)}</div>` : ''}<div class="flex flex-col gap-[2px] w-full">${chips.join('')}</div></div>`);
           });
         } else {
           const fd = calc.evaluated[0].dow, tc = fd + calc.evaluated.length, ch = (Math.ceil(tc / 7) >= 6) ? 'min-h-[72px]' : 'min-h-[86px]';
@@ -2820,14 +2968,17 @@
               const shortLbl = ev.payMemo ? this.escapeHtml(ev.payMemo) : '';
               payDedChip = `<div class="text-[7.2px] font-black text-rose-700 bg-rose-100/90 border border-rose-300 rounded px-0.5 leading-tight truncate text-center">💸${shortLbl}${shortAmt}</div>`;
             }
-            htmlParts.push(`<div data-cell-idx="${idx}" data-date-key="${ev.key}" class="p-1 cursor-pointer transition active:scale-95 flex flex-col justify-between ${ch} min-w-0 overflow-hidden ${cs}">${this.buildCellHeaderHtml(`${ev.m}.${ev.d}`, dc, isT, ev.badgeKey)}${ev.holidayName ? `<div class="text-[7.5px] font-extrabold text-red-600 truncate text-center">${ev.holidayName}</div>` : '<div class="h-[9px]"></div>'}<div class="text-center leading-none my-0.5">${sh}</div>${payDedChip}<div class="flex items-center justify-end text-[7.5px] font-extrabold leading-none"><span class="${ev.nightHours > 0 ? 'text-purple-800' : 'text-transparent'}">야${ev.nightHours}h</span></div></div>`);
+            htmlParts.push(`<div data-cell-idx="${idx}" data-date-key="${ev.key}" class="p-1 cursor-pointer transition active:scale-95 flex flex-col justify-between ${ch} min-w-0 overflow-hidden ${cs}">${this.buildCellHeaderHtml(`${ev.m}.${ev.d}`, dc, isT, ev.badgeKey)}${ev.holidayName ? `<div class="text-[7.5px] font-extrabold text-red-600 truncate text-center">${this.escapeHtml(ev.holidayName)}</div>` : '<div class="h-[9px]"></div>'}<div class="text-center leading-none my-0.5">${sh}</div>${payDedChip}<div class="flex items-center justify-end text-[7.5px] font-extrabold leading-none"><span class="${ev.nightHours > 0 ? 'text-purple-800' : 'text-transparent'}">야${ev.nightHours}h</span></div></div>`);
           });
         }
 
         grid.innerHTML = htmlParts.join('');
         if (this.swipeAnimClass) {
-          grid.className = `grid grid-cols-7 bg-slate-200 gap-[1px] w-full ${this.swipeAnimClass}`;
+          const anim = this.swipeAnimClass;
           this.swipeAnimClass = '';
+          grid.className = 'grid grid-cols-7 bg-slate-200 gap-[1px] w-full';
+          void grid.offsetWidth;
+          grid.className = `grid grid-cols-7 bg-slate-200 gap-[1px] w-full ${anim}`;
         }
       },
 
