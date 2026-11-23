@@ -11,7 +11,7 @@
   <link id="dynamic_favicon" rel="icon" type="image/png" href="./icon-192.png">
   <link id="dynamic_apple_icon" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="manifest" href="./manifest.json">
-  <title>스마트 월급·퇴직금 계산기 v9.9</title>
+  <title>스마트 월급·퇴직금 계산기 v10.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -235,14 +235,15 @@
 
               <!-- 2줄: 4. 당월 4대보험 개별 입력 · 자동 합산 (항목별 자동이월) -->
               <div class="bg-rose-50/60 px-2.5 py-2 rounded-xl border border-rose-200/90 text-xs space-y-1.5">
-                <div class="flex items-center justify-between gap-1">
-                  <label class="text-[9.5px] font-extrabold text-rose-950">4. 4대보험 개별입력 (자동합산 · 항목별 자동이월)</label>
+                <div class="flex items-center justify-between gap-1 nowrap">
+                  <label class="text-[9.5px] font-extrabold text-rose-950 truncate">4. 4대보험 (개별입력·자동합산)</label>
                   <span id="badge_month_ins_state" class="text-[8px] font-bold text-rose-600 shrink-0">이전달 유지</span>
                 </div>
-                <div class="flex items-center justify-between bg-white/95 border border-rose-200 rounded-lg px-2 py-1">
+                <div class="flex items-center justify-between bg-white/95 border border-rose-200 rounded-lg px-2 py-1 gap-1">
                   <span id="ins_sum_mode_label" class="text-[9px] font-extrabold text-rose-800 truncate">적용중 4대보험 합계</span>
                   <strong id="ins_total_display" class="text-[11.5px] font-black text-rose-950 tnum shrink-0">0원</strong>
                 </div>
+                <div id="ins_transition_warn" class="hidden text-[8.5px] font-extrabold text-amber-900 bg-amber-100 border border-amber-300 rounded-lg px-2 py-1 leading-snug"></div>
                 <div class="grid grid-cols-2 gap-1.5">
                   <div>
                     <label class="text-[8.8px] font-extrabold text-rose-950 block mb-0.5 nowrap">건강보험 (장기요양 포함)</label>
@@ -262,7 +263,7 @@
                   </div>
                 </div>
                 <div class="text-[8.5px] font-bold text-rose-700 leading-snug tracking-tight bg-rose-100/70 border border-rose-200/80 rounded-lg px-2 py-1">
-                  ※ 사내대출 시 <strong>주택자금상환액(원금)도 입력할 것</strong>, <strong>주택자금(이자)은 입력하지 않음</strong> (바뀐 항목만 수정하면 나머지는 자동이월됩니다)
+                  ※ 사내대출 시 <strong>주택자금상환액(원금)도 입력할 것</strong>, <strong>주택자금(이자)은 입력하지 않음</strong> (바뀐 항목만 수정하면 자동이월 · 상환 종료 시 <strong>0</strong> 입력)
                 </div>
               </div>
             </div>
@@ -1655,7 +1656,7 @@
 
       getExportPayload(inc = true) {
         const p = {
-          version: '9.9', exportedAt: new Date().toISOString(),
+          version: '10.0', exportedAt: new Date().toISOString(),
           basePay: this.basePay, fixedInsurance: this.fixedInsurance,
           retroOldBase: this.retroOldBase, retroNewBase: this.retroNewBase,
           retroStartM: this.retroStartM, retroEndM: this.retroEndM,
@@ -1842,17 +1843,26 @@
         const emptyParts = { insHealth: 0, insPension: 0, insEmp: 0, insLoan: 0 };
         const fields = ['insHealth', 'insPension', 'insEmp', 'insLoan'];
 
-        let latestItemKey = '', latestLegacyKey = '';
+        let latestItemKey = '', prevItemKey = '', latestLegacyKey = '';
+        let lastRawLegacyKey = '', lastRawLegacyVal = 0;
         let earliestKey = '';
         for (const [k, v] of Object.entries(this.monthExtras)) {
           if (!v) continue;
           const isItem = this.hasItemizedIns(v);
-          const isLeg = !isItem && v.exactIns !== undefined && v.exactIns >= 0;
-          if (!isItem && !isLeg) continue;
+          const hasRawLeg = v.exactIns !== undefined && v.exactIns >= 0;
+          const isLeg = !isItem && hasRawLeg;
+          if (!isItem && !hasRawLeg) continue;
 
           if (k <= targetKey) {
-            if (isItem && k > latestItemKey) latestItemKey = k;
+            if (isItem) {
+              if (k > latestItemKey) latestItemKey = k;
+              if (k < targetKey && k > prevItemKey) prevItemKey = k;
+            }
             if (isLeg && k > latestLegacyKey) latestLegacyKey = k;
+            if (hasRawLeg && Number(v.exactIns) > 0 && k >= lastRawLegacyKey) {
+              lastRawLegacyKey = k;
+              lastRawLegacyVal = Number(v.exactIns) || 0;
+            }
           }
           if (!earliestKey || k < earliestKey) earliestKey = k;
         }
@@ -1873,12 +1883,15 @@
             parts[f] = bestV;
           });
           const total = parts.insHealth + parts.insPension + parts.insEmp + parts.insLoan;
+          const isFirstTransition = (latestItemKey === targetKey) && (!prevItemKey || (latestLegacyKey && prevItemKey <= latestLegacyKey)) && lastRawLegacyVal > 0;
           return {
             val: total,
             source: latestItemKey === targetKey ? 'THIS_MONTH' : 'CARRIED',
             fromKey: latestItemKey,
             mode: 'ITEMIZED',
-            parts
+            parts,
+            isFirstTransition,
+            prevLegacyVal: lastRawLegacyVal
           };
         }
 
@@ -1889,7 +1902,9 @@
             source: latestLegacyKey === targetKey ? 'THIS_MONTH' : 'CARRIED',
             fromKey: latestLegacyKey,
             mode: 'LEGACY',
-            parts: { ...emptyParts }
+            parts: { ...emptyParts },
+            isFirstTransition: false,
+            prevLegacyVal: 0
           };
         }
 
@@ -1908,7 +1923,9 @@
               source: 'EARLIEST',
               fromKey: earliestKey,
               mode: 'ITEMIZED',
-              parts
+              parts,
+              isFirstTransition: false,
+              prevLegacyVal: 0
             };
           }
           return {
@@ -1916,15 +1933,17 @@
             source: 'EARLIEST',
             fromKey: earliestKey,
             mode: 'LEGACY',
-            parts: { ...emptyParts }
+            parts: { ...emptyParts },
+            isFirstTransition: false,
+            prevLegacyVal: 0
           };
         }
 
         /* 4. 최후 기본값 폴백 */
         if (this.fixedInsurance > 0) {
-          return { val: this.fixedInsurance, source: 'DEFAULT', fromKey: null, mode: 'LEGACY', parts: { ...emptyParts } };
+          return { val: this.fixedInsurance, source: 'DEFAULT', fromKey: null, mode: 'LEGACY', parts: { ...emptyParts }, isFirstTransition: false, prevLegacyVal: 0 };
         }
-        return { val: 0, source: 'DEFAULT', fromKey: null, mode: 'ITEMIZED', parts: { ...emptyParts } };
+        return { val: 0, source: 'DEFAULT', fromKey: null, mode: 'ITEMIZED', parts: { ...emptyParts }, isFirstTransition: false, prevLegacyVal: 0 };
       },
 
       getLmsAllowance(b = this.basePay) { return (!b || b <= 0) ? 0 : Math.round(b / 44); },
@@ -2118,6 +2137,7 @@
           if ($('retro_new_base') && !this.retroNewBase) $('retro_new_base').value = ex.customBasePay;
         }
 
+        /* 기존 exactIns는 지우지 않고 보존 -> 개별 칸을 모두 비우면 원래 합계로 안전 복구됨 */
         const setInsPart = (prop, raw) => {
           if (raw === '' || Number(raw) < 0) delete ex[prop];
           else ex[prop] = Number(raw);
@@ -2126,9 +2146,6 @@
         setInsPart('insPension', ipRaw);
         setInsPart('insEmp', ieRaw);
         setInsPart('insLoan', ilRaw);
-        if (ihRaw !== '' || ipRaw !== '' || ieRaw !== '' || ilRaw !== '') {
-          delete ex.exactIns;
-        }
 
         if (rgRaw === '' || Number(rgRaw) === 0) delete ex.retroGross;
         else ex.retroGross = Number(rgRaw);
@@ -2459,6 +2476,7 @@
             nameIn.disabled = true;
             nameIn.value = '';
             nameIn.placeholder = `법정공휴일(${this.selectedDayInfo.sysHol})`;
+            nameIn.classList.remove('bg-white', 'text-slate-800');
             nameIn.classList.add('bg-slate-100', 'text-slate-400');
           }
           if (btn) {
@@ -2472,6 +2490,7 @@
           nameIn.disabled = false;
           nameIn.placeholder = '휴일명(비우면 약정휴일)';
           nameIn.classList.remove('bg-slate-100', 'text-slate-400');
+          nameIn.classList.add('bg-white', 'text-slate-800');
         }
         if (btn) {
           btn.disabled = false;
@@ -2628,18 +2647,16 @@
       saveMemoOnly() { if (!this.selectedDateKey) return; this.invalidateSummaryCache(); this.syncModalMemoToRecord(this.selectedDateKey); this.closeDayModal(); this.save(); this.render(); },
       rerollMemoColor() {
         if (!this.selectedDateKey) return;
-        const c = this.records[this.selectedDateKey] || {};
+        const c = this.records[this.selectedDateKey];
         const curColor = (this.selectedDayInfo && this.selectedDayInfo.memoColor !== undefined)
           ? Number(this.selectedDayInfo.memoColor)
-          : (c.memoColor !== undefined ? Number(c.memoColor) : 0);
+          : (c && c.memoColor !== undefined ? Number(c.memoColor) : 0);
         const nextColor = (curColor + 1) % PASTEL_PALETTE.length;
         if (this.selectedDayInfo) this.selectedDayInfo.memoColor = nextColor;
         this.updateModalMemoColorPreview(nextColor);
-        const mt = ($('modal_memo_input')?.value || '').trim();
-        if (mt) {
-          c.memo = mt;
+        /* 이미 저장된 메모가 있는 경우에만 색상 즉시 반영 (미저장 신규 메모는 저장 버튼 클릭 시 반영) */
+        if (c && c.memo) {
           c.memoColor = nextColor;
-          this.records[this.selectedDateKey] = c;
           this.save(); this.render();
         }
       },
@@ -2966,9 +2983,25 @@
         setText('ins_total_display', `${calc.fixedInsurances.toLocaleString()}원`);
         setText('ins_sum_mode_label',
           (calc.insInfo.mode === 'LEGACY' && calc.fixedInsurances > 0)
-            ? '기존 합계 적용중 (아래 입력 시 자동합산 전환)'
+            ? '기존 합계 적용중 (개별 입력 시 전환)'
             : (calc.fixedInsurances > 0 ? '적용중 4대보험 합계 (자동합산)' : '적용중 4대보험 합계')
         );
+
+        const iparts = calc.insInfo.parts || { insHealth: 0, insPension: 0, insEmp: 0, insLoan: 0 };
+        const isItemMode = calc.insInfo.mode === 'ITEMIZED';
+
+        const warnEl = $('ins_transition_warn');
+        if (warnEl) {
+          if (calc.insInfo.mode === 'LEGACY' && calc.fixedInsurances > 0) {
+            warnEl.innerHTML = `💡 기존 합계 <strong>${calc.fixedInsurances.toLocaleString()}원</strong> 적용중 · 첫 개별 전환 시 <strong>건강·국민·고용</strong>을 모두 입력해 주세요.`;
+            warnEl.classList.remove('hidden');
+          } else if (calc.insInfo.isFirstTransition && (iparts.insHealth === 0 || iparts.insPension === 0 || iparts.insEmp === 0)) {
+            warnEl.innerHTML = `⚠️ 기존 합계(<strong>${calc.insInfo.prevLegacyVal.toLocaleString()}원</strong>)에서 전환 중 · 빠진 <strong>건강·국민·고용</strong>을 마저 입력하거나 모두 비우면 기존 합계로 복구됩니다.`;
+            warnEl.classList.remove('hidden');
+          } else {
+            warnEl.classList.add('hidden');
+          }
+        }
 
         const bonusPlaceholder = `예상 ${calc.autoBonus.toLocaleString()}`;
         const basePlaceholder = calc.appliedBase > 0 ? `적용중 ${calc.appliedBase.toLocaleString()}` : '기본급 입력(이후 자동이월)';
@@ -2982,8 +3015,6 @@
         if (nIn) nIn.placeholder = `예상 ${calc.autoNet.toLocaleString()}`;
         if (mBaseIn) mBaseIn.placeholder = basePlaceholder;
 
-        const iparts = calc.insInfo.parts || { insHealth: 0, insPension: 0, insEmp: 0, insLoan: 0 };
-        const isItemMode = calc.insInfo.mode === 'ITEMIZED';
         if (ihIn) ihIn.placeholder = (isItemMode && iparts.insHealth > 0) ? `적용중 ${iparts.insHealth.toLocaleString()}` : '건강보험 입력';
         if (ipIn) ipIn.placeholder = (isItemMode && iparts.insPension > 0) ? `적용중 ${iparts.insPension.toLocaleString()}` : '국민연금 입력';
         if (ieIn) ieIn.placeholder = (isItemMode && iparts.insEmp > 0) ? `적용중 ${iparts.insEmp.toLocaleString()}` : '고용보험 입력';
