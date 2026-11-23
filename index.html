@@ -11,7 +11,7 @@
   <link id="dynamic_favicon" rel="icon" type="image/png" href="./icon-192.png">
   <link id="dynamic_apple_icon" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="manifest" href="./manifest.json">
-  <title>스마트 월급·퇴직금 계산기 v9.7</title>
+  <title>스마트 월급·퇴직금 계산기 v9.8</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -40,8 +40,8 @@
     .nowrap { white-space: nowrap; }
     .tnum { font-variant-numeric: tabular-nums; }
     .memo-chip { width: 100%; color: #0f172a; font-size: clamp(7.4px, 2vw, 8.5px); font-weight: 800; letter-spacing: -.05em; line-height: 1.2; padding: 2px; border-radius: 3px; word-break: keep-all; overflow-wrap: break-word; white-space: normal; text-align: left; box-sizing: border-box; }
-    /* [안 A] 메모뷰 근무 기록 원색 솔리드 배지 */
-    .work-top-chip { width: 100%; font-size: clamp(7.3px, 2vw, 8.3px); font-weight: 900; letter-spacing: -.05em; line-height: 1.22; padding: 1.5px 2px; border-radius: 3px; text-align: center; white-space: nowrap; overflow: hidden; box-sizing: border-box; box-shadow: 0 1px 1.5px rgba(15,23,42,0.16); }
+    /* [안 A] 메모뷰 근무 기록 원색 솔리드 배지 (360px 소형 화면 잘림 방지 보정) */
+    .work-top-chip { width: 100%; font-size: clamp(6.8px, 1.9vw, 8.1px); font-weight: 900; letter-spacing: -.06em; line-height: 1.24; padding: 1.5px 0.5px; border-radius: 3px; text-align: center; white-space: nowrap; overflow: hidden; box-sizing: border-box; box-shadow: 0 1px 1.5px rgba(15,23,42,0.16); }
     .work-chip-hol-day { background: #dc2626; color: #ffffff; }
     .work-chip-hol-night { background: #6b21a8; color: #fef08a; }
     .work-chip-ot { background: #2563eb; color: #ffffff; }
@@ -591,12 +591,12 @@
             <div class="flex items-center justify-between gap-1">
               <span class="font-black text-slate-900 text-xs truncate">📝 스케줄 · 메모 <span class="text-[9.5px] font-bold text-amber-800">(메모뷰 전용)</span></span>
               <div class="flex items-center gap-1 shrink-0">
-                <span id="modal_memo_color_dot" class="w-4 h-4 rounded-full border border-slate-400 inline-block shrink-0"></span>
+                <span id="modal_memo_color_dot" class="w-4 h-4 rounded-full border-2 border-slate-400 inline-block shrink-0"></span>
                 <button onclick="App.rerollMemoColor()" class="px-2 py-0.5 rounded-lg bg-white border border-slate-300 text-[10px] font-extrabold text-slate-700 active:scale-95">🎨 색바꾸기</button>
                 <button onclick="App.clearMemoOnly()" class="px-2 py-0.5 rounded-lg bg-white border border-rose-200 text-[10px] font-extrabold text-rose-600 active:scale-95">메모삭제</button>
               </div>
             </div>
-            <textarea id="modal_memo_input" rows="2" placeholder="일상 메모 입력 (엔터로 새 색상박스 구분)" class="w-full p-2 rounded-xl border-2 border-amber-300 bg-white font-bold text-slate-900 text-xs box-border transition-colors"></textarea>
+            <textarea id="modal_memo_input" rows="2" oninput="App.updateModalMemoColorPreview()" placeholder="일상 메모 입력 (엔터로 새 색상박스 구분)" class="w-full p-2 rounded-xl border-2 border-amber-300 bg-white font-bold text-slate-900 text-xs box-border transition-colors"></textarea>
             <button onclick="App.saveMemoOnly()" class="w-full py-2 rounded-xl bg-slate-900 text-white font-black text-xs shadow-sm active:scale-95 transition">💾 메모만 바로 저장하기</button>
           </div>
 
@@ -628,7 +628,7 @@
           <!-- 특수 근태·휴일·공가·교육 정식 배지 지정 -->
           <div class="grid grid-cols-2 gap-1.5">
             <div class="col-span-2 flex items-center gap-1.5">
-              <input type="text" id="modal_comphol_name" maxlength="10" placeholder="휴일명(비우면 약정휴일)" class="w-[44%] py-2 px-2 rounded-xl border border-rose-300 bg-white font-bold text-slate-800 text-[10.5px] box-border">
+              <input type="text" id="modal_comphol_name" maxlength="10" oninput="App.updateCompHolBtnLabel()" placeholder="휴일명(비우면 약정휴일)" class="w-[44%] py-2 px-2 rounded-xl border border-rose-300 bg-white font-bold text-slate-800 text-[10.5px] box-border">
               <button id="btn_company_holiday" onclick="App.toggleCompanyHoliday()" class="flex-1 py-2 px-2 rounded-xl border-2 border-rose-400 bg-rose-50 text-rose-700 font-black text-[11px] truncate active:scale-95 transition">🎉 약정·임시휴일 지정</button>
             </div>
             <button onclick="App.applyDay('GONGGA',0)" class="py-2 px-2 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-800 font-black text-[11px] truncate active:scale-95 transition">🏥 유급공가(검진·경조)</button>
@@ -706,7 +706,7 @@
       { bg: '#f5d0fe', border: '#e879f9' }, { bg: '#a5f3fc', border: '#22d3ee' }
     ];
 
-    /* 수십 년간(1900~2100+) 한국 표준시(KST·단기력) 기반 자동 공휴일·대체공휴일·정기선거일 엔진 */
+    /* 수십 년간(1900~2100+) 한국 표준시(KST 정오 고정·단기력) 기반 자동 공휴일·대체공휴일·정기선거일 엔진 */
     const KoreanHolidayEngine = {
       cache: {},
       lunarDynamicCache: {},
@@ -732,7 +732,8 @@
           try {
             const fmt = new Intl.DateTimeFormat(loc, { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' });
             const getMD = (y, m, d) => {
-              const parts = fmt.formatToParts(new Date(y, m - 1, d, 12, 0, 0));
+              /* UTC 03:00 = 전 세계 어디서 접속해도 무조건 한국시간(KST) 정오 12:00 */
+              const parts = fmt.formatToParts(new Date(Date.UTC(y, m - 1, d, 3, 0, 0)));
               return {
                 m: parts.find(p => p.type === 'month')?.value || '',
                 d: parts.find(p => p.type === 'day')?.value || ''
@@ -760,8 +761,8 @@
         if (eng) {
           const scan = (startM, startD, days, tok) => {
             for (let i = 0; i < days; i++) {
-              const dt = new Date(year, startM - 1, startD + i, 12, 0, 0);
-              const ny = dt.getFullYear(), nm = dt.getMonth() + 1, nd = dt.getDate();
+              const dt = new Date(Date.UTC(year, startM - 1, startD + i, 3, 0, 0));
+              const ny = dt.getUTCFullYear(), nm = dt.getUTCMonth() + 1, nd = dt.getUTCDate();
               const md = eng.getMD(ny, nm, nd);
               if (md.m === tok.m && md.d === tok.d) {
                 return `${String(nm).padStart(2, '0')}-${String(nd).padStart(2, '0')}`;
@@ -824,7 +825,7 @@
         const mayKey = this.fmt(year, 5, 1);
         if (!map[mayKey]) map[mayKey] = '근로자의날';
 
-        /* 2026년 이후 정기 법정 선거일 자동 계산 (공직선거법 제34조) */
+        /* 2026년 이후 정기 법정 선거일 자동 계산 (공직선거법 제34조: 총선 4/9 이후·지선 5/31 이후 첫 수요일) */
         if (year >= 2026) {
           const resolveWedElection = (startM, startD, label) => {
             let cur = this.addDays(year, startM, startD, 0);
@@ -838,7 +839,7 @@
             if (!map[cur.key]) map[cur.key] = label;
           };
           if (year % 4 === 0 && year >= 2028) resolveWedElection(4, 9, '국회의원선거');
-          if (year % 4 === 2) resolveWedElection(6, 1, '지방선거');
+          if (year % 4 === 2) resolveWedElection(5, 31, '지방선거');
         }
         return (this.cache[year] = map);
       },
@@ -1407,7 +1408,12 @@
       async cloudBackupToGithub(silent = false) {
         clearTimeout(this.autoSyncTimer);
         this.autoSyncTimer = null;
-        if (this.isCloudSyncing) return;
+        if (this.isCloudSyncing) {
+          if (silent) {
+            this.autoSyncTimer = setTimeout(() => this.cloudBackupToGithub(true), 1500);
+          }
+          return;
+        }
         const t = ($('input_gh_token')?.value || '').trim() || this.ghToken;
         if (!t) { if (!silent) alert('깃허브 열쇠 번호를 입력해 주세요.'); return; }
         this.ghToken = t;
@@ -1609,7 +1615,7 @@
 
       getExportPayload(inc = true) {
         const p = {
-          version: '9.7', exportedAt: new Date().toISOString(),
+          version: '9.8', exportedAt: new Date().toISOString(),
           basePay: this.basePay, fixedInsurance: this.fixedInsurance,
           retroOldBase: this.retroOldBase, retroNewBase: this.retroNewBase,
           retroStartM: this.retroStartM, retroEndM: this.retroEndM,
@@ -2338,25 +2344,41 @@
           this.records[k] = { ...w, ...keep };
         }
       },
+      updateCompHolBtnLabel() {
+        const isSet = Boolean(this.selectedDayInfo?.compHol);
+        if (!isSet) {
+          setText('btn_company_holiday', '🎉 약정·임시휴일 지정');
+          return;
+        }
+        const curName = (this.selectedDayInfo?.compHolName || '').trim();
+        const inputName = ($('modal_comphol_name')?.value || '').trim();
+        setText('btn_company_holiday', curName !== inputName ? '✏️ 휴일명 수정 적용' : '🎉 약정·임시휴일 해제');
+      },
       toggleCompanyHoliday() {
         if (!this.selectedDateKey) return;
         this.invalidateSummaryCache();
         this.syncModalMemoToRecord(this.selectedDateKey);
         const c = this.records[this.selectedDateKey] || {};
         const customName = ($('modal_comphol_name')?.value || '').trim();
-        c.compHol = !c.compHol;
-        if (c.compHol) {
+        const prevName = (this.selectedDayInfo?.compHolName || '').trim();
+        if (c.compHol && customName !== prevName) {
           if (customName) c.compHolName = customName;
           else delete c.compHolName;
-          if (c.type !== 'HOLIDAY') {
-            delete c.type;
-            delete c.hours;
-            delete c.vacDays;
-            delete c.shift;
-            delete c.customShift;
-          }
         } else {
-          delete c.compHolName;
+          c.compHol = !c.compHol;
+          if (c.compHol) {
+            if (customName) c.compHolName = customName;
+            else delete c.compHolName;
+            if (c.type !== 'HOLIDAY') {
+              delete c.type;
+              delete c.hours;
+              delete c.vacDays;
+              delete c.shift;
+              delete c.customShift;
+            }
+          } else {
+            delete c.compHolName;
+          }
         }
         if (!c.memo && !c.payMemo && !c.payDed && !c.type && !c.compHol) delete this.records[this.selectedDateKey];
         else this.records[this.selectedDateKey] = c;
@@ -2364,7 +2386,8 @@
       },
 
       updateModalMemoColorPreview(colorIdx) {
-        const idx = ((Number(colorIdx) || 0) % PASTEL_PALETTE.length + PASTEL_PALETTE.length) % PASTEL_PALETTE.length;
+        const rawIdx = (colorIdx !== undefined) ? colorIdx : (this.selectedDayInfo?.memoColor ?? 0);
+        const idx = ((Number(rawIdx) || 0) % PASTEL_PALETTE.length + PASTEL_PALETTE.length) % PASTEL_PALETTE.length;
         const pal = PASTEL_PALETTE[idx];
         const dot = $('modal_memo_color_dot');
         const input = $('modal_memo_input');
@@ -2373,7 +2396,8 @@
           dot.style.borderColor = pal.border;
         }
         if (input) {
-          input.style.background = pal.bg;
+          const hasText = (input.value || '').trim().length > 0;
+          input.style.background = hasText ? pal.bg : '#ffffff';
           input.style.borderColor = pal.border;
         }
       },
@@ -2414,7 +2438,7 @@
         else hb.classList.add('hidden');
 
         if ($('modal_comphol_name')) $('modal_comphol_name').value = ev.compHolName || '';
-        setText('btn_company_holiday', ev.compHol ? '🎉 약정·임시휴일 해제' : '🎉 약정·임시휴일 지정');
+        this.updateCompHolBtnLabel();
         setText('modal_leave_SubInfo', ev.shift === 'NIGHT'
           ? '🌙 야간조: 휴가 시간만큼 당일 야간수당(8h)에서 차감'
           : '☀️ 초·중반조: 시간차 사용 시 급여차감 0원');
