@@ -11,7 +11,7 @@
   <link id="dynamic_favicon" rel="icon" type="image/png" href="./icon-192.png">
   <link id="dynamic_apple_icon" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="manifest" href="./manifest.json">
-  <title>스마트 월급·퇴직금 계산기 v10.0</title>
+  <title>스마트 월급·퇴직금 계산기 v10.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -1194,17 +1194,19 @@
         sm.innerHTML = hS; em.innerHTML = hE;
       },
       onRetroSimInput() {
-        this.retroOldBase = Number($('retro_old_base')?.value) || 0;
-        this.retroNewBase = Number($('retro_new_base')?.value) || 0;
+        const oldRaw = ($('retro_old_base')?.value || '').trim();
+        const newRaw = ($('retro_new_base')?.value || '').trim();
+        this.retroOldBase = oldRaw === '' ? 0 : (Number(oldRaw) || 0);
+        this.retroNewBase = newRaw === '' ? 0 : (Number(newRaw) || 0);
         this.retroStartM = Number($('retro_start_m')?.value) || 3;
         this.retroEndM = Number($('retro_end_m')?.value) || 7;
         this.renderRetroSimulator();
         this.saveDebounced();
       },
       renderRetroSimulator() {
-        const latestBase = this.resolveEffectiveBaseInfo(this.reportYear, 12).val || this.basePay;
-        const oldB = Number($('retro_old_base')?.value) || this.retroOldBase || 0;
-        const newB = Number($('retro_new_base')?.value) || this.retroNewBase || latestBase;
+        const oldEl = $('retro_old_base'), newEl = $('retro_new_base');
+        const oldB = oldEl ? (oldEl.value.trim() === '' ? 0 : (Number(oldEl.value) || 0)) : (this.retroOldBase || 0);
+        const newB = newEl ? (newEl.value.trim() === '' ? 0 : (Number(newEl.value) || 0)) : (this.retroNewBase || 0);
         let sm = Number($('retro_start_m')?.value) || this.retroStartM || 3;
         let em = Number($('retro_end_m')?.value) || this.retroEndM || 7;
         if (sm > em) [sm, em] = [em, sm];
@@ -1475,8 +1477,10 @@
           this.ghGistId = ''; const gid = await this.findExistingGistId(t);
           if (!gid) { this.updateGithubUiStatus(); return alert('백업 파일을 찾지 못했습니다.'); }
           const r = await fetch(`https://api.github.com/gists/${gid}?_t=${Date.now()}`, { headers: this.getGithubHeaders(t), cache: 'no-store' });
+          if (!r.ok) throw new Error('ERR');
           const d = await r.json();
           const raw = (d.files?.[this.GIST_FILENAME] || d.files?.[this.LEGACY_GIST_FILENAME])?.content;
+          if (!raw) throw new Error('EMPTY');
           this.loadStateObject(JSON.parse(raw), false);
           this.ghToken = t; this.ghGistId = gid;
           if (this.priorUsedVacation < 0) this.priorUsedVacation = 0;
@@ -1558,7 +1562,7 @@
         ));
       },
 
-      syncFallbackBaseAndIns() {
+      syncFallbackBaseAndIns(preserveRootBase = true, preserveRootIns = true) {
         let latestBaseKey = '', latestBaseVal = 0;
         let latestInsKey = '';
         for (const [k, v] of Object.entries(this.monthExtras)) {
@@ -1571,11 +1575,13 @@
             latestInsKey = k;
           }
         }
-        this.basePay = latestBaseVal > 0 ? latestBaseVal : 0;
+        if (latestBaseVal > 0) this.basePay = latestBaseVal;
+        else if (!preserveRootBase) this.basePay = 0;
+
         if (latestInsKey) {
           const [iy, im] = latestInsKey.split('-').map(Number);
           this.fixedInsurance = this.resolveEffectiveInsInfo(iy, im).val;
-        } else {
+        } else if (!preserveRootIns) {
           this.fixedInsurance = 0;
         }
       },
@@ -1650,13 +1656,13 @@
         if (p.ghAutoSync !== undefined) this.ghAutoSync = Boolean(p.ghAutoSync);
         if (p.ghLastSync !== undefined) this.ghLastSync = p.ghLastSync;
         this.initRetroSelectors();
-        this.syncFallbackBaseAndIns();
+        this.syncFallbackBaseAndIns(true, true);
         this.invalidateSummaryCache();
       },
 
       getExportPayload(inc = true) {
         const p = {
-          version: '10.0', exportedAt: new Date().toISOString(),
+          version: '10.1', exportedAt: new Date().toISOString(),
           basePay: this.basePay, fixedInsurance: this.fixedInsurance,
           retroOldBase: this.retroOldBase, retroNewBase: this.retroNewBase,
           retroStartM: this.retroStartM, retroEndM: this.retroEndM,
@@ -2008,10 +2014,11 @@
         if ($('input_total_vac')) $('input_total_vac').value = vacCfg.total;
         if ($('input_prior_used_vac')) $('input_prior_used_vac').value = vacCfg.prior;
         if ($('input_hire_date')) $('input_hire_date').value = this.hireDate || '2020-01-01';
-        if ($('retro_old_base')) $('retro_old_base').value = this.retroOldBase || '';
+        if ($('retro_old_base')) $('retro_old_base').value = this.retroOldBase > 0 ? this.retroOldBase : '';
         const latestBase = this.resolveEffectiveBaseInfo(this.reportYear, 12).val || this.basePay;
         if ($('retro_new_base')) {
-          $('retro_new_base').value = this.retroNewBase || latestBase || '';
+          $('retro_new_base').value = this.retroNewBase > 0 ? this.retroNewBase : '';
+          $('retro_new_base').placeholder = latestBase > 0 ? `현재 ${latestBase.toLocaleString()}` : '0';
         }
         if ($('retro_start_m')) $('retro_start_m').value = this.retroStartM || 3;
         if ($('retro_end_m')) $('retro_end_m').value = this.retroEndM || 7;
@@ -2107,6 +2114,9 @@
 
       onExtraInput() {
         const pm = this.getActivePayYM(), ex = this.getMonthExtra(pm.y, pm.m, true);
+        const hadCustomBase = ex.customBasePay !== undefined;
+        const hadMonthIns = this.hasItemizedIns(ex) || ex.exactIns !== undefined;
+
         const wRaw = ($('input_exact_wage')?.value || '').trim();
         const bRaw = ($('input_exact_bonus')?.value || '').trim();
         const nRaw = ($('input_exact_net')?.value || '').trim();
@@ -2124,17 +2134,19 @@
         if (bRaw === '') delete ex.exactBonus;
         else ex.exactBonus = Number(bRaw);
 
-        delete ex.exactGross;
-        delete ex.exactDed;
+        /* 구버전 exactGross/exactDed는 사용자가 해당 항목을 직접 입력했을 때만 덮어쓰기 정리 */
+        if (wRaw !== '' || bRaw !== '') delete ex.exactGross;
 
         if (nRaw === '') delete ex.exactNet;
-        else ex.exactNet = Number(nRaw);
+        else {
+          ex.exactNet = Number(nRaw);
+          delete ex.exactDed;
+        }
 
         if (baseRaw === '' || Number(baseRaw) <= 0) {
           delete ex.customBasePay;
         } else {
           ex.customBasePay = Number(baseRaw);
-          if ($('retro_new_base') && !this.retroNewBase) $('retro_new_base').value = ex.customBasePay;
         }
 
         /* 기존 exactIns는 지우지 않고 보존 -> 개별 칸을 모두 비우면 원래 합계로 안전 복구됨 */
@@ -2154,9 +2166,9 @@
         else ex.retroDed = Number(rdRaw);
 
         this.cleanupMonthExtra(pm.y, pm.m);
-        this.syncFallbackBaseAndIns();
+        this.syncFallbackBaseAndIns(!hadCustomBase, !hadMonthIns);
         this.saveDebounced();
-        this.render(true);
+        this.render(true, true);
       },
       clearMonthSlipInputs() {
         const pm = this.getActivePayYM(), k = this.getMonthKey(pm.y, pm.m), ex = this.monthExtras[k];
@@ -2171,7 +2183,7 @@
           this.cleanupMonthExtra(pm.y, pm.m);
         }
         this.save();
-        this.render(false);
+        this.render(false, true);
       },
 
       getStandardMonthGridDates(y, m) {
@@ -2838,7 +2850,7 @@
         }).join('');
       },
 
-      render(skipInput = false) {
+      render(skipInput = false, skipGrid = false) {
         const ti = this.getTodayInfo();
         setText('today_header_info', `오늘 ${ti.m}.${ti.d} (${ti.dayName})`);
         this.updateGithubUiStatus();
@@ -2892,9 +2904,11 @@
           return;
         }
 
-        this.renderYmPicker();
-        this.updateStampUI();
-        this.renderMemoHub();
+        if (!skipGrid) {
+          this.renderYmPicker();
+          this.updateStampUI();
+          this.renderMemoHub();
+        }
 
         setText('big_ym_title', this.calendarView === 'MEMO' ? `${this.memoYear}. ${String(this.memoMonth).padStart(2, '0')} 일정` : `${this.payViewYear}. ${String(this.payViewMonth).padStart(2, '0')} 급여`);
 
@@ -3090,10 +3104,18 @@
         const mvh = Math.round(calc.monthVacDays * 8 * 10) / 10;
         setText('stat_leave', `${this.fmtVacNum(calc.monthVacDays)}일(${mvh}h)`);
 
-        const taxAndOtherDed = calc.finalDed - calc.fixedInsurances - calc.unionFee;
+        const isPayDedApplied = !calc.hasExactNet && calc.ex.exactDed === undefined;
+        const appliedPayDed = isPayDedApplied ? calc.sumPayDed : 0;
+        const taxAndOtherDed = calc.finalDed - calc.fixedInsurances - calc.unionFee - appliedPayDed;
         const taxAndOtherDedHtml = taxAndOtherDed >= 0
           ? `-${taxAndOtherDed.toLocaleString()}원`
           : `+${Math.abs(taxAndOtherDed).toLocaleString()}원(환급·조정)`;
+
+        const payDedDetailLine = calc.sumPayDed > 0
+          ? (isPayDedApplied
+            ? `<div class="flex justify-between text-rose-300"><span>• 급여뷰 공제메모 반영 (${calc.payMemoItems.length}건 · 예상세후 차감)</span><strong>-${calc.sumPayDed.toLocaleString()}원</strong></div>`
+            : `<div class="flex justify-between text-slate-400"><span>• 급여뷰 공제메모 기록 (${calc.payMemoItems.length}건 · 확정세후에 포함)</span><span>참고 ${calc.sumPayDed.toLocaleString()}원</span></div>`)
+          : '';
 
         const insBreakdownLine = (isItemMode && calc.fixedInsurances > 0)
           ? `<div class="text-[9.5px] text-slate-400 pl-2">└ 건보 ${iparts.insHealth.toLocaleString()} · 연금 ${iparts.insPension.toLocaleString()} · 고용 ${iparts.insEmp.toLocaleString()}${iparts.insLoan > 0 ? ` · 주자금상환 ${iparts.insLoan.toLocaleString()}` : ''}</div>`
@@ -3117,8 +3139,10 @@
           <div class="flex justify-between text-slate-300"><span>• 4대보험(${calc.fixedInsurances.toLocaleString()}) + 노조비(${calc.unionFee.toLocaleString()})</span><strong>-${(calc.fixedInsurances + calc.unionFee).toLocaleString()}원</strong></div>
           ${insBreakdownLine}
           <div class="flex justify-between text-slate-300"><span>• 소득세·주민세 및 기타공제${calc.hasRetro ? ' (소급공제 포함)' : ''}</span><strong>${taxAndOtherDedHtml}</strong></div>
-          ${calc.sumPayDed > 0 ? `<div class="flex justify-between text-rose-300"><span>• 급여뷰 공제메모 반영 (${calc.payMemoItems.length}건 · 예상세후 차감)</span><strong>-${calc.sumPayDed.toLocaleString()}원</strong></div>` : ''}
+          ${payDedDetailLine}
         `);
+
+        if (skipGrid) return;
 
         const grid = $('calendar_grid');
         this.currentGridCells = [];
